@@ -16,7 +16,7 @@ datadir = @datadir@
 DESTDIR =
 
 CXX = @CXX@
-CFLAGS = @CFLAGS@ -I./ -DFRODO_HPUX_REV=@HPUX_REV@ -DKBD_LANG=@KBD_LANG@
+CFLAGS = @CFLAGS@ -I./ -DKBD_LANG=@KBD_LANG@
 DEFS = @DEFS@ -DDATADIR=\"$(datadir)/frodo/\" -DBINDIR=\"$(bindir)/\"
 LDFLAGS = @LDFLAGS@
 LIBS = @LIBS@
@@ -28,8 +28,7 @@ INSTALL_DATA = @INSTALL_DATA@
 OBJS    = main.o Display.o Prefs.o SID.o REU.o IEC.o 1541fs.o \
           1541d64.o 1541t64.o 1541job.o SAM.o CmdPipe.o
 SLOBJS  = $(OBJS) C64.o CPUC64.o VIC.o CIA.o CPU1541.o
-PCOBJS  = $(OBJS) C64_PC.o CPUC64_PC.o VIC.o CIA.o CPU1541_PC.o
-PCFLAGS = -DPRECISE_CPU_CYCLES=1 -DPRECISE_CIA_CYCLES=1 -DPC_IS_POINTER=0
+SLFLAGS = -DPRECISE_CPU_CYCLES=1 -DPRECISE_CIA_CYCLES=1 -DPC_IS_POINTER=0
 SCOBJS  = $(OBJS) C64_SC.o CPUC64_SC.o VIC_SC.o CIA_SC.o CPU1541_SC.o CPU_common.o
 SCFLAGS = -DFRODO_SC
 SRCS    = main.cpp Display.cpp Prefs.cpp SID.cpp REU.cpp IEC.cpp 1541fs.cpp \
@@ -43,25 +42,18 @@ SRCS    = main.cpp Display.cpp Prefs.cpp SID.cpp REU.cpp IEC.cpp 1541fs.cpp \
 .SUFFIXES:
 .SUFFIXES: .o .cpp .h
 
-all: Frodo FrodoPC FrodoSC
+all: Frodo FrodoSC
 
 Frodo: $(SLOBJS)
 	$(CXX) -o Frodo $(LDFLAGS) $(SLOBJS) $(LIBS)
 
-FrodoPC: $(PCOBJS)
-	$(CXX) -o FrodoPC $(LDFLAGS) $(PCOBJS) $(LIBS)
-
 FrodoSC: $(SCOBJS)
 	$(CXX) -o FrodoSC $(LDFLAGS) $(SCOBJS) $(LIBS)
 
-install: Frodo FrodoPC FrodoSC installdirs
+install: Frodo FrodoSC installdirs
 	$(INSTALL_PROGRAM) Frodo $(DESTDIR)$(bindir)/Frodo
-	$(INSTALL_PROGRAM) FrodoPC $(DESTDIR)$(bindir)/FrodoPC
 	$(INSTALL_PROGRAM) FrodoSC $(DESTDIR)$(bindir)/FrodoSC
 	$(INSTALL_PROGRAM) Frodo_GUI.tcl $(DESTDIR)$(bindir)/Frodo_GUI.tcl
-	$(INSTALL_DATA) ../1541\ ROM $(DESTDIR)$(datadir)/frodo/1541\ ROM
-	$(INSTALL_DATA) ../Basic\ ROM $(DESTDIR)$(datadir)/frodo/Basic\ ROM
-	$(INSTALL_DATA) ../Char\ ROM $(DESTDIR)$(datadir)/frodo/Char\ ROM
 	$(INSTALL_DATA) ../Kernal\ ROM $(DESTDIR)$(datadir)/frodo/Kernal\ ROM
 
 installdirs:
@@ -69,18 +61,14 @@ installdirs:
 
 uninstall:
 	rm -f $(DESTDIR)$(bindir)/Frodo
-	rm -f $(DESTDIR)$(bindir)/FrodoPC
 	rm -f $(DESTDIR)$(bindir)/FrodoSC
 	rm -f $(DESTDIR)$(bindir)/Frodo_GUI.tcl
-	rm -f $(DESTDIR)$(datadir)/frodo/1541\ ROM
-	rm -f $(DESTDIR)$(datadir)/frodo/Basic\ ROM
-	rm -f $(DESTDIR)$(datadir)/frodo/Char\ ROM
 	rm -f $(DESTDIR)$(datadir)/frodo/Kernal\ ROM
 	rmdir $(DESTDIR)$(datadir)/frodo
 
 clean:
-	rm -f $(SLOBJS) $(PCOBJS) $(SCOBJS)
-	rm -f Frodo FrodoPC FrodoSC
+	rm -f $(SLOBJS) $(SCOBJS)
+	rm -f Frodo FrodoSC
 	rm -f core* *.core *~ *.bak
 
 distclean: clean
@@ -93,29 +81,29 @@ depend dep:
 
 .cpp.o:
 	$(CXX) $(DEFS) $(CFLAGS) -o $@ -c $*.cpp
-       
-C64_PC.o: C64.cpp C64.h C64_x.h CmdPipe.h CPUC64.h CPU1541.h VIC.h SID.h CIA.h REU.h IEC.h 1541job.h Display.h Prefs.h
-	$(CXX) $(DEFS) $(CFLAGS) $(PCFLAGS) -o $@ -c $*.cpp
 
-CPUC64_PC.o: CPUC64.cpp CPUC64.h CPU_emulline.h C64.h VIC.h SID.h CIA.h REU.h IEC.h Display.h Version.h
-	$(CXX) $(DEFS) $(CFLAGS) $(PCFLAGS) -o $@ -c $*.cpp
+C64.o: C64.cpp
+	$(CXX) $(DEFS) $(CFLAGS) $(SLFLAGS) -o $@ -c $*.cpp
 
-CPU1541_PC.o: CPU1541.cpp CPU1541.h CPU_emulline.h 1541job.h C64.h CIA.h Display.h
-	$(CXX) $(DEFS) $(CFLAGS) $(PCFLAGS) -o $@ -c $*.cpp
-
-C64_SC.o: C64_SC.cpp C64.h C64_x.h CmdPipe.h CPUC64.h CPU1541.h VIC.h SID.h CIA.h REU.h IEC.h 1541job.h Display.h Prefs.h
+C64_SC.o: C64_SC.cpp
 	$(CXX) $(DEFS) $(CFLAGS) $(SCFLAGS) -o $@ -c $*.cpp
 
-CPUC64_SC.o: CPUC64_SC.cpp CPUC64.h CPU_emulcycle.h CPU_common.h C64.h VIC.h SID.h CIA.h REU.h IEC.h Display.h Version.h
+CPUC64.o: CPUC64.cpp
+	$(CXX) $(DEFS) $(CFLAGS) $(SLFLAGS) -o $@ -c $*.cpp
+
+CPUC64_SC.o: CPUC64_SC.cpp
 	$(CXX) $(DEFS) $(CFLAGS) $(SCFLAGS) -o $@ -c $*.cpp
 
-CPU1541_SC.o: CPU1541_SC.cpp CPU1541.h CPU_emulcycle.h CPU_common.h 1541job.h C64.h CIA.h Display.h
+CPU1541.o: CPU1541.cpp
+	$(CXX) $(DEFS) $(CFLAGS) $(SLFLAGS) -o $@ -c $*.cpp
+
+CPU1541_SC.o: CPU1541_SC.cpp
 	$(CXX) $(DEFS) $(CFLAGS) $(SCFLAGS) -o $@ -c $*.cpp
 
-VIC_SC.o: VIC_SC.cpp VIC.h C64.h CPUC64.h Display.h Prefs.h
+VIC_SC.o: VIC_SC.cpp
 	$(CXX) $(DEFS) $(CFLAGS) $(SCFLAGS) -o $@ -c $*.cpp
 
-CIA_SC.o: CIA_SC.cpp CIA.h CPUC64.h CPU1541.h VIC.h Prefs.h
+CIA_SC.o: CIA_SC.cpp
 	$(CXX) $(DEFS) $(CFLAGS) $(SCFLAGS) -o $@ -c $*.cpp
 
 #-------------------------------------------------------------------------
