@@ -46,7 +46,4 @@ rm -rf ${RPM_BUILD_ROOT}
 %{_bindir}/FrodoPC
 %{_bindir}/FrodoSC
 %{_bindir}/Frodo_GUI.tcl
-"%{_datadir}/frodo/1541 ROM"
-"%{_datadir}/frodo/Basic ROM"
-"%{_datadir}/frodo/Char ROM"
 "%{_datadir}/frodo/Kernal ROM"
