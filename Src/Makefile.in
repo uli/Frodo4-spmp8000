@@ -66,22 +66,22 @@ depend dep:
 .cpp.s:
 	$(CC) $(INCLUDES) $(CFLAGS) $(EXTRAFLAGS) -o $@ -S $*.cpp -g0
 
-C64_PC.o: C64.cpp C64.h C64_x.i CmdPipe.h CPUC64.h CPU1541.h VIC.h SID.h CIA.h REU.h IEC.h 1541job.h Display.h Prefs.h
+C64_PC.o: C64.cpp C64.h C64_x.h CmdPipe.h CPUC64.h CPU1541.h VIC.h SID.h CIA.h REU.h IEC.h 1541job.h Display.h Prefs.h
 	$(CC) $(INCLUDES) $(CFLAGS) $(PCFLAGS) -o $@ -c $*.cpp
 
-CPUC64_PC.o: CPUC64.cpp CPUC64.h CPU_emulline.i C64.h VIC.h SID.h CIA.h REU.h IEC.h Display.h Version.h
+CPUC64_PC.o: CPUC64.cpp CPUC64.h CPU_emulline.h C64.h VIC.h SID.h CIA.h REU.h IEC.h Display.h Version.h
 	$(CC) $(INCLUDES) $(CFLAGS) $(PCFLAGS) -o $@ -c $*.cpp
 
-CPU1541_PC.o: CPU1541.cpp CPU1541.h CPU_emulline.i 1541job.h C64.h CIA.h Display.h
+CPU1541_PC.o: CPU1541.cpp CPU1541.h CPU_emulline.h 1541job.h C64.h CIA.h Display.h
 	$(CC) $(INCLUDES) $(CFLAGS) $(PCFLAGS) -o $@ -c $*.cpp
 
-C64_SC.o: C64_SC.cpp C64.h C64_x.i CmdPipe.h CPUC64.h CPU1541.h VIC.h SID.h CIA.h REU.h IEC.h 1541job.h Display.h Prefs.h
+C64_SC.o: C64_SC.cpp C64.h C64_x.h CmdPipe.h CPUC64.h CPU1541.h VIC.h SID.h CIA.h REU.h IEC.h 1541job.h Display.h Prefs.h
 	$(CC) $(INCLUDES) $(CFLAGS) $(SCFLAGS) -o $@ -c $*.cpp
 
-CPUC64_SC.o: CPUC64_SC.cpp CPUC64.h CPU_emulcycle.i CPU_common.h C64.h VIC.h SID.h CIA.h REU.h IEC.h Display.h Version.h
+CPUC64_SC.o: CPUC64_SC.cpp CPUC64.h CPU_emulcycle.h CPU_common.h C64.h VIC.h SID.h CIA.h REU.h IEC.h Display.h Version.h
 	$(CC) $(INCLUDES) $(CFLAGS) $(SCFLAGS) -o $@ -c $*.cpp
 
-CPU1541_SC.o: CPU1541_SC.cpp CPU1541.h CPU_emulcycle.i CPU_common.h 1541job.h C64.h CIA.h Display.h
+CPU1541_SC.o: CPU1541_SC.cpp CPU1541.h CPU_emulcycle.h CPU_common.h 1541job.h C64.h CIA.h Display.h
 	$(CC) $(INCLUDES) $(CFLAGS) $(SCFLAGS) -o $@ -c $*.cpp
 
 VIC_SC.o: VIC_SC.cpp VIC.h C64.h CPUC64.h Display.h Prefs.h

@@ -1,5 +1,5 @@
 /*
- *  FixPoint.i - Provides fixed point arithmetic (for use in SID.cpp)
+ *  FixPoint.h - Provides fixed point arithmetic (for use in SID.cpp)
  *
  *  (C) 1997 Andreas Dehmel
  *

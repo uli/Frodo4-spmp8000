@@ -1,4 +1,4 @@
-# Makefile.in for Frodo (RISC OS with GCC)
+# Makefile for Frodo (RISC OS with GCC)
 
 ## Version information
 VERSION   = 4
