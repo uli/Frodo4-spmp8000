@@ -143,29 +143,10 @@ private:
 // of the file types supported by this module
 extern bool IsImageFile(const char *path, const uint8 *header, long size);
 
+// Read directory of disk image file into (empty) c64_dir_entry vector
+extern bool ReadImageDirectory(const char *path, vector<c64_dir_entry> &vec);
+
 // Create new blank disk image file
 extern bool CreateImageFile(const char *path);
-
-// Open disk image file
-extern FILE *open_image_file(const char *path, bool write_mode);
-
-// Parse disk image file header, fill in descriptor
-extern bool parse_image_file(FILE *f, image_file_desc &desc);
-
-// Read/write sector from/to disk image file, return error code
-extern int read_sector(FILE *f, const image_file_desc &desc, int track, int sector, uint8 *buffer);
-extern int write_sector(FILE *f, const image_file_desc &desc, int track, int sector, uint8 *buffer);
-
-// Format disk image
-extern bool format_image(FILE *f, image_file_desc &desc, bool lowlevel, uint8 id1, uint8 id2, const uint8 *disk_name, int disk_name_len);
-
-// Get number of sectors per track
-extern int sectors_per_track(const image_file_desc &desc, int track);
-
-// Get reference to error info byte of given track/sector
-extern uint8 &error_info_for_sector(image_file_desc &desc, int track, int sector);
-
-// Write error info back to image file
-extern void write_back_error_info(FILE *f, const image_file_desc &desc);
 
 #endif

@@ -109,6 +109,8 @@ const int accum_num_sectors[41] = {
 
 // Prototypes
 static bool match(const uint8 *p, int p_len, const uint8 *n);
+static FILE *open_image_file(const char *path, bool write_mode);
+static bool parse_image_file(FILE *f, image_file_desc &desc);
 
 
 /*
@@ -1292,7 +1294,7 @@ const int conv_job_error[16] = {
 };
 
 // Read sector, return error code
-int read_sector(FILE *f, const image_file_desc &desc, int track, int sector, uint8 *buffer)
+static int read_sector(FILE *f, const image_file_desc &desc, int track, int sector, uint8 *buffer)
 {
 	// Convert track/sector to byte offset in file
 	long offset = offset_from_ts(desc, track, sector);
@@ -1312,7 +1314,7 @@ int read_sector(FILE *f, const image_file_desc &desc, int track, int sector, uin
 }
 
 // Write sector, return error code
-int write_sector(FILE *f, const image_file_desc &desc, int track, int sector, uint8 *buffer)
+static int write_sector(FILE *f, const image_file_desc &desc, int track, int sector, uint8 *buffer)
 {
 	// Convert track/sector to byte offset in file
 	long offset = offset_from_ts(desc, track, sector);
@@ -1348,7 +1350,7 @@ bool ImageDrive::write_sector(int track, int sector, uint8 *buffer)
 }
 
 // Write error info back to image file
-void write_back_error_info(FILE *f, const image_file_desc &desc)
+static void write_back_error_info(FILE *f, const image_file_desc &desc)
 {
 	if (desc.type == TYPE_D64 && desc.has_error_info) {
 		int num_sectors = desc.num_tracks == 40 ? NUM_SECTORS_40 : NUM_SECTORS_35;
@@ -1358,7 +1360,7 @@ void write_back_error_info(FILE *f, const image_file_desc &desc)
 }
 
 // Format disk image
-bool format_image(FILE *f, image_file_desc &desc, bool lowlevel, uint8 id1, uint8 id2, const uint8 *disk_name, int disk_name_len)
+static bool format_image(FILE *f, image_file_desc &desc, bool lowlevel, uint8 id1, uint8 id2, const uint8 *disk_name, int disk_name_len)
 {
 	uint8 p[256];
 
@@ -1955,7 +1957,7 @@ error:
  *  Open disk image file, return file handle
  */
 
-FILE *open_image_file(const char *path, bool write_mode)
+static FILE *open_image_file(const char *path, bool write_mode)
 {
 #if 0
 	if (is_zipcode_file(path)) {
@@ -2039,7 +2041,7 @@ static bool parse_x64_file(FILE *f, image_file_desc &desc)
 	return true;
 }
 
-bool parse_image_file(FILE *f, image_file_desc &desc)
+static bool parse_image_file(FILE *f, image_file_desc &desc)
 {
 	// Read header
 	uint8 header[64];
@@ -2058,6 +2060,76 @@ bool parse_image_file(FILE *f, image_file_desc &desc)
 		return parse_d64_file(f, desc, true);
 	else
 		return false;
+}
+
+
+/*
+ *  Read directory of disk image file into (empty) c64_dir_entry vector,
+ *  returns false on error
+ */
+
+bool ReadImageDirectory(const char *path, vector<c64_dir_entry> &vec)
+{
+	bool result = false;
+
+	// Open file
+	FILE *f = open_image_file(path, false);
+	if (f) {
+		int num_dir_blocks = 0;
+
+		// Determine file type and fill in image_file_desc structure
+		image_file_desc desc;
+		if (!parse_image_file(f, desc))
+			goto done;
+
+		// Scan all directory blocks
+		uint8 dir[256];
+		dir[DIR_NEXT_TRACK] = DIR_TRACK;
+		dir[DIR_NEXT_SECTOR] = 1;
+
+		while (dir[DIR_NEXT_TRACK] && num_dir_blocks < num_sectors[DIR_TRACK]) {
+			if (read_sector(f, desc, dir[DIR_NEXT_TRACK], dir[DIR_NEXT_SECTOR], dir) != ERR_OK)
+				break;
+			num_dir_blocks++;
+
+			// Scan all 8 entries of a block
+			uint8 *de = dir + DIR_ENTRIES;
+			for (int j=0; j<8; j++, de+=SIZEOF_DE) {
+
+				// Skip empty entries
+				if (de[DE_TYPE] == 0)
+					continue;
+
+				// Convert file name (strip everything after and including the first trailing space)
+				uint8 name_buf[17];
+				memcpy(name_buf, de + DE_NAME, 16);
+				name_buf[16] = 0;
+				uint8 *p = (uint8 *)memchr(name_buf, 0xa0, 16);
+				if (p)
+					*p = 0;
+
+				// Convert file type
+				int type = de[DE_TYPE] & 7;
+				if (type > 4)
+					type = FTYPE_UNKNOWN;
+
+				// Read start address
+				uint8 sa_lo = 0, sa_hi = 0;
+				uint8 buf[256];
+				if (read_sector(f, desc, de[DE_TRACK], de[DE_SECTOR], buf) == ERR_OK) {
+					sa_lo = buf[2];
+					sa_hi = buf[3];
+				}
+
+				// Add entry
+				vec.push_back(c64_dir_entry(name_buf, type, !(de[DE_TYPE] & 0x80), de[DE_TYPE] & 0x40, ((de[DE_NUM_BLOCKS_H] << 8) + de[DE_NUM_BLOCKS_L]) * 254, 0, sa_lo, sa_hi));
+			}
+		}
+
+		result = true;
+done:	fclose(f);
+	}
+	return result;
 }
 
 
