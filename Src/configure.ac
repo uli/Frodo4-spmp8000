@@ -12,9 +12,9 @@ AC_PROG_CPP
 AC_PROG_MAKE_SET
 AC_PROG_INSTALL
 
-dnl Don't want the default "-O2 -g" that autoconf uses for gcc.
+dnl -fomit-frame-pointer makes things faster
 if [[ x"$GXX" = "xyes" ]]; then
-  CFLAGS="-O2 -g -fomit-frame-pointer -Wall -Wno-unused -Wno-format"
+  CFLAGS="$CFLAGS -fomit-frame-pointer -fno-exceptions"
 fi
 
 UNAME_RELEASE=`(uname -r) 2>/dev/null` || UNAME_RELEASE=unknown
@@ -151,8 +151,7 @@ fi
 rm -f conftest*
 
 if [[ "$HAVEGCC27" = "y" -a "$HAVEI386" = "y" ]]; then
-# Don't want strength-reduce on the i386, makes the code slower usually.
-  CFLAGS="$CFLAGS -fno-strength-reduce -DREGPARAM=\"__attribute__((regparm(3)))\""
+  CFLAGS="$CFLAGS -DREGPARAM=\"__attribute__((regparm(3)))\""
 elif [[ "$TARGET" = "amigaos" ]]; then
   CFLAGS="$CFLAGS -DREGPARAM=\"__attribute__((regargs(4)))\" "
 else
