@@ -357,9 +357,9 @@ public:
 		MovePenTo(204, 40);
 		DrawString("by Christian Bauer");
 		MovePenTo(204, 52);
-		DrawString("<cbauer@iphcip1.physik.uni-mainz.de>");
+		DrawString("<Christian.Bauer@uni-mainz.de>");
 		MovePenTo(204, 75);
-		DrawString(B_UTF8_COPYRIGHT " Copyright 1994-1997");
+		DrawString(B_UTF8_COPYRIGHT " Copyright 1994-1997,2002-2004");
 		MovePenTo(204, 87);
 		DrawString("Freely distributable.");
 	}

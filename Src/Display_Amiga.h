@@ -501,7 +501,7 @@ void C64Display::PollKeyboard(UBYTE *key_matrix, UBYTE *rev_matrix, UBYTE *joyst
 					case 0: {	// About Frodo
 						TheC64->Pause();
 						char str[256];
-						sprintf(str, "%s by Christian Bauer\n<cbauer@iphcip1.physik.uni-mainz.de>\n© Copyright 1994-1997\nFreely distributable", VERSION_STRING);
+						sprintf(str, "%s by Christian Bauer\n<Christian.Bauer@uni-mainz.de>\n© Copyright 1994-1997,2002-2004", VERSION_STRING);
 						ShowRequester(str, "OK");
 						TheC64->Resume();
 						break;
