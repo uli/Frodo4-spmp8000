@@ -1,7 +1,7 @@
 /*
  *  1541_ROM.h - 1541 ROM
  *
- *  Frodo (C) 1994-1997,2002-2003 Christian Bauer
+ *  Frodo (C) 1994-1997,2002-2004 Christian Bauer
  *  C64/1541 ROMs (C) Commodore Business Machines
  */
 

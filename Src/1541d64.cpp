@@ -1,7 +1,7 @@
 /*
  *  1541d64.cpp - 1541 emulation in disk image files (.d64/.x64/zipcode)
  *
- *  Frodo (C) 1994-1997,2002-2003 Christian Bauer
+ *  Frodo (C) 1994-1997,2002-2004 Christian Bauer
  *  zipcode decoding routines (C) 1993-1997 Marko Mäkelä, Paul David Doherty
  *
  *  This program is free software; you can redistribute it and/or modify
