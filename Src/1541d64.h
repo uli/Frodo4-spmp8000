@@ -69,7 +69,7 @@ class D64Drive : public Drive {
 public:
 	D64Drive(IEC *iec, char *filepath);
 	virtual ~D64Drive();
-	virtual uint8 Open(int channel, char *filename);
+	virtual uint8 Open(int channel, const uint8 *name, int name_len);
 	virtual uint8 Close(int channel);
 	virtual uint8 Read(int channel, uint8 *byte);
 	virtual uint8 Write(int channel, uint8 byte, bool eoi);
@@ -77,23 +77,24 @@ public:
 
 private:
 	void open_close_d64_file(char *d64name);
-	uint8 open_file(int channel, char *filename);
-	void convert_filename(char *srcname, char *destname, int *filemode, int *filetype);
-	bool find_file(char *filename, int *track, int *sector);
+
+	uint8 open_file(int channel, const uint8 *name, int name_len);
+	bool find_file(const uint8 *pattern, int *track, int *sector);
 	uint8 open_file_ts(int channel, int track, int sector);
-	uint8 open_directory(char *pattern);
-	uint8 open_direct(int channel, char *filename);
+	uint8 open_directory(const uint8 *pattern, int pattern_len);
+	uint8 open_direct(int channel, const uint8 *name);
 	void close_all_channels();
-	void execute_command(char *command);
-	void block_read_cmd(char *command);
-	void buffer_ptr_cmd(char *command);
-	bool parse_bcmd(char *cmd, int *arg1, int *arg2, int *arg3, int *arg4);
-	void chd64_cmd(char *d64name);
+
+	void block_read_cmd(int channel, int track, int sector, bool user_cmd = false);
+	void buffer_pointer_cmd(int channel, int pos);
+	void mem_read_cmd(uint16 adr, uint8 len);
+	void mem_write_cmd(uint16 adr, uint8 len, uint8 *p);
+	void initialize_cmd(void);
+
 	int alloc_buffer(int want);
 	void free_buffer(int buf);
 	bool read_sector(int track, int sector, uint8 *buffer);
 	int offset_from_ts(int track, int sector);
-	uint8 conv_from_64(uint8 c, bool map_slash);
 
 	char orig_d64_name[256]; // Original path of .d64 file
 
@@ -110,9 +111,6 @@ private:
 	int buf_len[16];		// Remaining bytes in buffer
 
 	bool buf_free[4];		// Buffer 0..3 free?
-
-	char cmd_buffer[44];	// Buffer for incoming command strings
-	int cmd_len;			// Length of received command
 
 	int image_header;		// Length of .d64 file header
 

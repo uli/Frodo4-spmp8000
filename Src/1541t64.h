@@ -26,7 +26,7 @@
 
 // Information for file inside a .t64 file
 typedef struct {
-	char name[17];		// File name, PETSCII
+	uint8 name[17];		// File name, PETSCII
 	uint8 type;			// File type
 	uint8 sa_lo, sa_hi;	// Start address
 	int offset;			// Offset of first byte in .t64 file
@@ -38,7 +38,7 @@ class T64Drive : public Drive {
 public:
 	T64Drive(IEC *iec, char *filepath);
 	virtual ~T64Drive();
-	virtual uint8 Open(int channel, char *filename);
+	virtual uint8 Open(int channel, const uint8 *name, int name_len);
 	virtual uint8 Close(int channel);
 	virtual uint8 Read(int channel, uint8 *byte);
 	virtual uint8 Write(int channel, uint8 byte, bool eoi);
@@ -48,14 +48,15 @@ private:
 	void open_close_t64_file(char *t64name);
 	bool parse_t64_file(void);
 	bool parse_lynx_file(void);
-	uint8 open_file(int channel, char *filename);
-	uint8 open_directory(int channel, char *filename);
-	void convert_filename(char *srcname, char *destname, int *filemode, int *filetype);
-	bool find_first_file(char *name, int type, int *num);
+
+	uint8 open_file(int channel, const uint8 *name, int name_len);
+	uint8 open_directory(int channel, const uint8 *pattern, int pattern_len);
+	bool find_first_file(const uint8 *pattern, int pattern_len, int &num);
 	void close_all_channels(void);
-	void execute_command(char *command);
-	void cht64_cmd(char *t64path);
-	uint8 conv_from_64(uint8 c, bool map_slash);
+
+	virtual void rename_cmd(const uint8 *new_file, int new_file_len, const uint8 *old_file, int old_file_len);
+	virtual void initialize_cmd(void);
+	virtual void validate_cmd(void);
 
 	FILE *the_file;			// File pointer for .t64 file
 	bool is_lynx;			// Flag: .t64 file is really a LYNX archive
@@ -66,9 +67,6 @@ private:
 
 	int num_files;			// Number of files in .t64 file and in file_info array
 	FileInfo *file_info;	// Pointer to array of file information structs for each file
-
-	char cmd_buffer[44];	// Buffer for incoming command strings
-	int cmd_len;			// Length of received command
 
 	uint8 read_char[16];	// Buffers for one-byte read-ahead
 };

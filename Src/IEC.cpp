@@ -367,7 +367,7 @@ uint8 IEC::open_out(uint8 byte, bool eoi)
 		*name_ptr = 0;				// End string
 		listener->LED = DRVLED_ON;	// Turn on drive LED
 		UpdateLEDs();
-		return listener->Open(sec_addr, name_buf);
+		return listener->Open(sec_addr, name_buf, name_len);
 	}
 
 	return ST_OK;
@@ -412,28 +412,48 @@ Drive::Drive(IEC *iec)
  */
 
 // 1541 error messages
-char *Errors_1541[] = {
-	"00, OK,00,00\r",
-	"25,WRITE ERROR,00,00\r",
-	"26,WRITE PROTECT ON,00,00\r",
-	"30,SYNTAX ERROR,00,00\r",
-	"33,SYNTAX ERROR,00,00\r",
-	"60,WRITE FILE OPEN,00,00\r",
-	"61,FILE NOT OPEN,00,00\r",
-	"62,FILE NOT FOUND,00,00\r",
-	"67,ILLEGAL TRACK OR SECTOR,00,00\r",
-	"70,NO CHANNEL,00,00\r",
-	"73,CBM DOS V2.6 1541,00,00\r",
-	"74,DRIVE NOT READY,00,00\r"
+static const char *Errors_1541[] = {
+	"00, OK,%02d,%02d\x0d",
+	"01, FILES SCRATCHED,%02d,%02d\x0d",
+	"03, UNIMPLEMENTED,%02d,%02d\x0d",
+	"20, READ ERROR,%02d,%02d\x0d",
+	"21, READ ERROR,%02d,%02d\x0d",
+	"22, READ ERROR,%02d,%02d\x0d",
+	"23, READ ERROR,%02d,%02d\x0d",
+	"24, READ ERROR,%02d,%02d\x0d",
+	"25, WRITE ERROR,%02d,%02d\x0d",
+	"26, WRITE PROTECT ON,%02d,%02d\x0d",
+	"27, READ ERROR,%02d,%02d\x0d",
+	"28, WRITE ERROR,%02d,%02d\x0d",
+	"29, DISK ID MISMATCH,%02d,%02d\x0d",
+	"30, SYNTAX ERROR,%02d,%02d\x0d",
+	"31, SYNTAX ERROR,%02d,%02d\x0d",
+	"32, SYNTAX ERROR,%02d,%02d\x0d",
+	"33, SYNTAX ERROR,%02d,%02d\x0d",
+	"34, SYNTAX ERROR,%02d,%02d\x0d",
+	"60, WRITE FILE OPEN,%02d,%02d\x0d",
+	"61, FILE NOT OPEN,%02d,%02d\x0d",
+	"62, FILE NOT FOUND,%02d,%02d\x0d",
+	"63, FILE EXISTS,%02d,%02d\x0d",
+	"64, FILE TYPE MISMATCH,%02d,%02d\x0d",
+	"65, NO BLOCK,%02d,%02d\x0d",
+	"66, ILLEGAL TRACK OR SECTOR,%02d,%02d\x0d",
+	"70, NO CHANNEL,%02d,%02d\x0d",
+	"71, DIR ERROR,%02d,%02d\x0d",
+	"72, DISK FULL,%02d,%02d\x0d",
+	"73, CBM DOS V2.6 1541,%02d,%02d\x0d",
+	"74, DRIVE NOT READY,%02d,%02d\x0d"
 };
 
-void Drive::set_error(int error)
+void Drive::set_error(int error, int track, int sector)
 {
-	error_ptr = Errors_1541[error];
-	error_len = strlen(error_ptr);
+	// Write error message to buffer
+	sprintf(error_buf, Errors_1541[error], track, sector);
+	error_ptr = error_buf;
+	error_len = strlen(error_buf);
 
 	// Set drive condition
-	if (error != ERR_OK)
+	if (error != ERR_OK && error != ERR_SCRATCHED)
 		if (error == ERR_STARTUP)
 			LED = DRVLED_OFF;
 		else
@@ -441,4 +461,414 @@ void Drive::set_error(int error)
 	else if (LED == DRVLED_ERROR)
 		LED = DRVLED_OFF;
 	the_iec->UpdateLEDs();
+}
+
+
+/*
+ *  Parse file name, determine access mode and file type
+ */
+
+void Drive::parse_file_name(const uint8 *src, int src_len, uint8 *dest, int &dest_len, int &mode, int &type, int &rec_len, bool convert_charset)
+{
+	// If the string contains a ':', the file name starts after that
+	const uint8 *p = (const uint8 *)memchr(src, ':', src_len);
+	if (p) {
+		p++;
+		src_len -= p - src;
+	} else
+		p = src;
+
+	// Transfer file name upto ','
+	dest_len = 0;
+	uint8 *q = dest;
+	while (*p != ',' && src_len-- > 0) {
+		if (convert_charset)
+			*q++ = petscii2ascii(*p++);
+		else
+			*q++ = *p++;
+		dest_len++;
+	}
+	*q++ = 0;
+
+	// Strip trailing CRs
+	while (dest_len > 0 && dest[dest_len - 1] == 0x0d)
+		dest[--dest_len] = 0;
+
+	// Look for mode and type parameters separated by ','
+	p++; src_len--;
+	while (src_len > 0) {
+		switch (*p) {
+			case 'D':
+				type = FTYPE_DEL;
+				break;
+			case 'S':
+				type = FTYPE_SEQ;
+				break;
+			case 'P':
+				type = FTYPE_PRG;
+				break;
+			case 'U':
+				type = FTYPE_USR;
+				break;
+			case 'L':
+				type = FTYPE_REL;
+				while (*p != ',' && src_len-- > 0) p++;
+				p++; src_len--;
+				rec_len = *p++; src_len--;
+				if (src_len < 0)
+					rec_len = 0;
+				break;
+			case 'R':
+				mode = FMODE_READ;
+				break;
+			case 'W':
+				mode = FMODE_WRITE;
+				break;
+			case 'A':
+				mode = FMODE_APPEND;
+				break;
+			case 'M':
+				mode = FMODE_M;
+				break;
+		}
+
+		// Skip to ','
+		while (*p != ',' && src_len-- > 0) p++;
+		p++; src_len--;
+	}
+}
+
+
+/*
+ *  Execute DOS command (parse command and call appropriate routine)
+ */
+
+static void parse_block_cmd_args(const uint8 *p, int &arg1, int &arg2, int &arg3, int &arg4)
+{
+	arg1 = arg2 = arg3 = arg4 = 0;
+
+	while (*p == ' ' || *p == 0x1d || *p == ',') p++;
+	while (*p >= '0' && *p < '@')
+		arg1 = arg1 * 10 + (*p++ & 0x0f);
+
+	while (*p == ' ' || *p == 0x1d || *p == ',') p++;
+	while (*p >= '0' && *p < '@')
+		arg2 = arg2 * 10 + (*p++ & 0x0f);
+
+	while (*p == ' ' || *p == 0x1d || *p == ',') p++;
+	while (*p >= '0' && *p < '@')
+		arg3 = arg3 * 10 + (*p++ & 0x0f);
+
+	while (*p == ' ' || *p == 0x1d || *p == ',') p++;
+	while (*p >= '0' && *p < '@')
+		arg4 = arg4 * 10 + (*p++ & 0x0f);
+}
+
+void Drive::execute_cmd(const uint8 *cmd, int cmd_len)
+{
+	// Strip trailing CRs
+	while (cmd_len > 0 && cmd[cmd_len - 1] == 0x0d)
+		cmd_len--;
+
+	// Find token delimiters
+	const uint8 *colon = (const uint8 *)memchr(cmd, ':', cmd_len);
+	const uint8 *equal = colon ? (const uint8 *)memchr(colon, '=', cmd_len - (colon - cmd)) : NULL;
+	const uint8 *comma = (const uint8 *)memchr(cmd, ',', cmd_len);
+	const uint8 *minus = (const uint8 *)memchr(cmd, '-', cmd_len);
+
+	// Parse command name
+	set_error(ERR_OK);
+	switch (cmd[0]) {
+		case 'B':	// Block/buffer
+			if (!minus)
+				set_error(ERR_SYNTAX31);
+			else {
+				// Parse arguments (up to 4 decimal numbers separated by
+				// space, cursor right or comma)
+				const uint8 *p = colon ? colon + 1 : cmd + 3;
+				int arg1, arg2, arg3, arg4;
+				parse_block_cmd_args(p, arg1, arg2, arg3, arg4);
+
+				// Switch on command
+				switch (minus[1]) {
+					case 'R':
+						block_read_cmd(arg1, arg3, arg4);
+						break;
+					case 'W':
+						block_write_cmd(arg1, arg3, arg4);
+						break;
+					case 'E':
+						block_execute_cmd(arg1, arg3, arg4);
+						break;
+					case 'A':
+						block_allocate_cmd(arg2, arg3);
+						break;
+					case 'F':
+						block_free_cmd(arg2, arg3);
+						break;
+					case 'P':
+						buffer_pointer_cmd(arg1, arg2);
+						break;
+					default:
+						set_error(ERR_SYNTAX31);
+						break;
+				}
+			}
+			break;
+
+		case 'M':	// Memory
+			if (cmd[1] != '-')
+				set_error(ERR_SYNTAX31);
+			else {
+				// Read parameters
+				uint16 adr = uint8(cmd[3]) | (uint8(cmd[4]) << 8);
+				uint8 len = uint8(cmd[5]);
+
+				// Switch on command
+				switch (cmd[2]) {
+					case 'R':
+						mem_read_cmd(adr, (cmd_len < 6) ? 1 : len);
+						break;
+					case 'W':
+						mem_write_cmd(adr, len, (uint8 *)cmd + 6);
+						break;
+					case 'E':
+						mem_execute_cmd(adr);
+						break;
+					default:
+						set_error(ERR_SYNTAX31);
+						break;
+				}
+			}
+			break;
+
+		case 'C':	// Copy
+			if (!colon)
+				set_error(ERR_SYNTAX31);
+			else if (!equal || memchr(cmd, '*', cmd_len) || memchr(cmd, '?', cmd_len) || (comma && comma < equal))
+				set_error(ERR_SYNTAX30);
+			else
+				copy_cmd(colon + 1, equal - colon - 1, equal + 1, cmd_len - (equal + 1 - cmd));
+			break;
+
+		case 'R':	// Rename
+			if (!colon)
+				set_error(ERR_SYNTAX34);
+			else if (!equal || comma || memchr(cmd, '*', cmd_len) || memchr(cmd, '?', cmd_len))
+				set_error(ERR_SYNTAX30);
+			else
+				rename_cmd(colon + 1, equal - colon - 1, equal + 1, cmd_len - (equal + 1 - cmd));
+			break;
+
+		case 'S':	// Scratch
+			if (!colon)
+				set_error(ERR_SYNTAX34);
+			else
+				scratch_cmd(colon + 1, cmd_len - (colon + 1 - cmd));
+			break;
+
+		case 'P':	// Position
+			position_cmd(cmd + 1, cmd_len - 1);
+			break;
+
+		case 'I':	// Initialize
+			initialize_cmd();
+			break;
+
+		case 'N':	// New (format)
+			if (!colon)
+				set_error(ERR_SYNTAX34);
+			else
+				new_cmd(colon + 1, comma ? (comma - colon - 1) : cmd_len - (colon + 1 - cmd), comma);
+			break;
+
+		case 'V':	// Validate
+			validate_cmd();
+			break;
+
+		case 'U':	// User
+			if (cmd[1] == '0')
+				break;
+			switch (cmd[1] & 0x0f) {
+				case 1: {	// U1/UA: Read block
+					const uint8 *p = colon ? colon + 1 : cmd + 2;
+					int arg1, arg2, arg3, arg4;
+					parse_block_cmd_args(p, arg1, arg2, arg3, arg4);
+					block_read_cmd(arg1, arg3, arg4, true);
+					break;
+				}
+				case 2: {	// U2/UB: Write block
+					const uint8 *p = colon ? colon + 1 : cmd + 2;
+					int arg1, arg2, arg3, arg4;
+					parse_block_cmd_args(p, arg1, arg2, arg3, arg4);
+					block_write_cmd(arg1, arg3, arg4, true);
+					break;
+				}
+				case 9:		// U9/UI: C64/VC20 mode switch
+					if (cmd[2] != '+' && cmd[2] != '-')
+						Reset();
+					break;
+				case 10:	// U:/UJ: Reset
+					Reset();
+					break;
+				default:
+					set_error(ERR_UNIMPLEMENTED);
+					break;
+			}
+			break;
+
+		default:
+			set_error(ERR_SYNTAX31);
+			break;
+	}
+}
+
+// BLOCK-READ:channel,0,track,sector
+void Drive::block_read_cmd(int channel, int track, int sector, bool user_cmd)
+{
+	set_error(ERR_UNIMPLEMENTED);
+}
+
+// BLOCK-WRITE:channel,0,track,sector
+void Drive::block_write_cmd(int channel, int track, int sector, bool user_cmd)
+{
+	set_error(ERR_UNIMPLEMENTED);
+}
+
+// BLOCK-EXECUTE:channel,0,track,sector
+void Drive::block_execute_cmd(int channel, int track, int sector)
+{
+	set_error(ERR_UNIMPLEMENTED);
+}
+
+// BLOCK-ALLOCATE:0,track,sector
+void Drive::block_allocate_cmd(int track, int sector)
+{
+	set_error(ERR_UNIMPLEMENTED);
+}
+
+// BLOCK-FREE:0,track,sector
+void Drive::block_free_cmd(int track, int sector)
+{
+	set_error(ERR_UNIMPLEMENTED);
+}
+
+// BUFFER-POINTER:channel,pos
+void Drive::buffer_pointer_cmd(int channel, int pos)
+{
+	set_error(ERR_UNIMPLEMENTED);
+}
+
+// M-R<adr low><adr high>[<number>]
+void Drive::mem_read_cmd(uint16 adr, uint8 len)
+{
+	unsupp_cmd();
+	error_ptr = error_buf;
+	error_buf[0] = 0;
+	error_len = 0;
+	set_error(ERR_OK);
+}
+
+// M-W<adr low><adr high><number><data...>
+void Drive::mem_write_cmd(uint16 adr, uint8 len, uint8 *p)
+{
+	set_error(ERR_UNIMPLEMENTED);
+}
+
+// M-E<adr low><adr high>
+void Drive::mem_execute_cmd(uint16 adr)
+{
+	set_error(ERR_UNIMPLEMENTED);
+}
+
+//   COPY:new=file1,file2,...
+//        ^   ^
+// new_file   old_files
+void Drive::copy_cmd(const uint8 *new_file, int new_file_len, const uint8 *old_files, int old_files_len)
+{
+	set_error(ERR_UNIMPLEMENTED);
+}
+
+// RENAME:new=old
+//        ^   ^
+// new_file   old_file
+void Drive::rename_cmd(const uint8 *new_file, int new_file_len, const uint8 *old_file, int old_file_len)
+{
+	set_error(ERR_UNIMPLEMENTED);
+}
+
+// SCRATCH:file1,file2,...
+//         ^
+//         files
+void Drive::scratch_cmd(const uint8 *files, int files_len)
+{
+	set_error(ERR_UNIMPLEMENTED);
+}
+
+// P<channel><record low><record high><byte>
+//  ^
+//  cmd
+void Drive::position_cmd(const uint8 *cmd, int cmd_len)
+{
+	set_error(ERR_UNIMPLEMENTED);
+}
+
+// INITIALIZE
+void Drive::initialize_cmd(void)
+{
+	set_error(ERR_UNIMPLEMENTED);
+}
+
+// NEW:name,id
+//     ^   ^
+//  name   comma (or NULL)
+void Drive::new_cmd(const uint8 *name, int name_len, const uint8 *comma)
+{
+	set_error(ERR_UNIMPLEMENTED);
+}
+
+// VALIDATE
+void Drive::validate_cmd(void)
+{
+	set_error(ERR_UNIMPLEMENTED);
+}
+
+
+/*
+ *  Notice user of unsupported drive command
+ */
+
+void Drive::unsupp_cmd(void)
+{
+}
+
+
+/*
+ *  Convert PETSCII<->ASCII
+ */
+
+char ascii2petscii(char c)
+{
+	if ((c >= 'A') && (c <= 'Z') || (c >= 'a') && (c <= 'z'))
+		return c ^ 0x20;
+	return c;
+}
+
+void ascii2petscii(char *dest, const char *src, int n)
+{
+	while (n-- && (*dest++ = ascii2petscii(*src++))) ;
+}
+
+char petscii2ascii(uint8 c)
+{
+	if ((c >= 'A') && (c <= 'Z') || (c >= 'a') && (c <= 'z'))
+		return c ^ 0x20;
+	if ((c >= 0xc1) && (c <= 0xda))
+		return c ^ 0x80;
+	return c;
+}
+
+void petscii2ascii(char *dest, const char *src, int n)
+{
+	while (n-- && (*dest++ = petscii2ascii(*src++))) ;
 }

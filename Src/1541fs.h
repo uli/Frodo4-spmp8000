@@ -28,7 +28,7 @@ class FSDrive : public Drive {
 public:
 	FSDrive(IEC *iec, char *path);
 	virtual ~FSDrive();
-	virtual uint8 Open(int channel, char *filename);
+	virtual uint8 Open(int channel, const uint8 *name, int name_len);
 	virtual uint8 Close(int channel);
 	virtual uint8 Read(int channel, uint8 *byte);
 	virtual uint8 Write(int channel, uint8 byte, bool eoi);
@@ -36,23 +36,19 @@ public:
 
 private:
 	bool change_dir(char *dirpath);
-	uint8 open_file(int channel, char *filename);
-	uint8 open_directory(int channel, char *filename);
-	void convert_filename(char *srcname, char *destname, int *filemode, int *filetype, bool *wildflag);
-	void find_first_file(char *name);
+
+	uint8 open_file(int channel, const uint8 *name, int name_len);
+	uint8 open_directory(int channel, const uint8 *pattern, int pattern_len);
+	void find_first_file(char *pattern);
 	void close_all_channels(void);
-	void execute_command(char *command);
-	void chdir_cmd(char *dirpath);
-	uint8 conv_from_64(uint8 c, bool map_slash);
-	uint8 conv_to_64(uint8 c, bool map_slash);
+
+	virtual void initialize_cmd(void);
+	virtual void validate_cmd(void);
 
 	char dir_path[256];		// Path to directory
 	char orig_dir_path[256]; // Original directory path
 	char dir_title[16];		// Directory title
 	FILE *file[16];			// File pointers for each of the 16 channels
-
-	char cmd_buffer[44];	// Buffer for incoming command strings
-	int cmd_len;			// Length of received command
 
 	uint8 read_char[16];	// Buffers for one-byte read-ahead
 };

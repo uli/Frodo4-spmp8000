@@ -44,16 +44,6 @@ enum {
 	CHMOD_DIRECT		// Direct buffer access ('#')
 };
 
-// Access modes
-enum {
-	FMODE_READ, FMODE_WRITE, FMODE_APPEND
-};
-
-// File types
-enum {
-	FTYPE_PRG, FTYPE_SEQ, FTYPE_USR, FTYPE_REL
-};
-
 // Number of tracks/sectors
 const int NUM_TRACKS = 35;
 const int NUM_SECTORS = 683;
@@ -160,13 +150,13 @@ void D64Drive::open_close_d64_file(char *d64name)
  *  Open channel
  */
 
-uint8 D64Drive::Open(int channel, char *filename)
+uint8 D64Drive::Open(int channel, const uint8 *name, int name_len)
 {
 	set_error(ERR_OK);
 
 	// Channel 15: execute file name as command
 	if (channel == 15) {
-		execute_command(filename);
+		execute_cmd(name, name_len);
 		return ST_OK;
 	}
 
@@ -175,16 +165,16 @@ uint8 D64Drive::Open(int channel, char *filename)
 		return ST_OK;
 	}
 
-	if (filename[0] == '$')
+	if (name[0] == '$')
 		if (channel)
 			return open_file_ts(channel, 18, 0);
 		else
-			return open_directory(filename+1);
+			return open_directory(name + 1, name_len - 1);
 
-	if (filename[0] == '#')
-		return open_direct(channel, filename);
+	if (name[0] == '#')
+		return open_direct(channel, name);
 
-	return open_file(channel, filename);
+	return open_file(channel, name, name_len);
 }
 
 
@@ -192,33 +182,39 @@ uint8 D64Drive::Open(int channel, char *filename)
  *  Open file
  */
 
-uint8 D64Drive::open_file(int channel, char *filename)
+uint8 D64Drive::open_file(int channel, const uint8 *name, int name_len)
 {
-	char plainname[256];
-	int filemode = FMODE_READ;
-	int filetype = FTYPE_PRG;
-	int track, sector;
+	uint8 plain_name[256];
+	int plain_name_len;
+	int mode = FMODE_READ;
+	int type = FTYPE_PRG;
+	int rec_len = 0;
+	parse_file_name(name, name_len, plain_name, plain_name_len, mode, type, rec_len);
+	if (plain_name_len > 16)
+		plain_name_len = 16;
 
-	convert_filename(filename, plainname, &filemode, &filetype);
-
-	// Channel 0 is READ PRG, channel 1 is WRITE PRG
-	if (!channel) {
-		filemode = FMODE_READ;
-		filetype = FTYPE_PRG;
-	}
-	if (channel == 1) {
-		filemode = FMODE_WRITE;
-		filetype = FTYPE_PRG;
+	// Channel 0 is READ, channel 1 is WRITE
+	if (channel == 0 || channel == 1) {
+		mode = channel ? FMODE_WRITE : FMODE_READ;
+		if (type == FTYPE_DEL)
+			type = FTYPE_PRG;
 	}
 
 	// Allow only read accesses
-	if (filemode != FMODE_READ) {
+	if (mode != FMODE_READ) {
 		set_error(ERR_WRITEPROTECT);
 		return ST_OK;
 	}
 
+	// Relative files are not supported
+	if (type == FTYPE_REL) {
+		set_error(ERR_UNIMPLEMENTED);
+		return ST_OK;
+	}
+
 	// Find file in directory and open it
-	if (find_file(plainname, &track, &sector))
+	int track, sector;
+	if (find_file(plain_name, &track, &sector))
 		return open_file_ts(channel, track, sector);
 	else
 		set_error(ERR_FILENOTFOUND);
@@ -228,69 +224,14 @@ uint8 D64Drive::open_file(int channel, char *filename)
 
 
 /*
- *  Analyze file name, get access mode and type
- */
-
-void D64Drive::convert_filename(char *srcname, char *destname, int *filemode, int *filetype)
-{
-	char *p;
-
-	// Search for ':', p points to first character after ':'
-	if ((p = strchr(srcname, ':')) != NULL)
-		p++;
-	else
-		p = srcname;
-
-	// Remaining string -> destname
-	strncpy(destname, p, NAMEBUF_LENGTH);
-
-	// Search for ','
-	p = destname;
-	while (*p && (*p != ',')) p++;
-
-	// Look for mode parameters seperated by ','
-	p = destname;
-	while ((p = strchr(p, ',')) != NULL) {
-
-		// Cut string after the first ','
-		*p++ = 0;
-
-		switch (*p) {
-			case 'P':
-				*filetype = FTYPE_PRG;
-				break;
-			case 'S':
-				*filetype = FTYPE_SEQ;
-				break;
-			case 'U':
-				*filetype = FTYPE_USR;
-				break;
-			case 'L':
-				*filetype = FTYPE_REL;
-				break;
-			case 'R':
-				*filemode = FMODE_READ;
-				break;
-			case 'W':
-				*filemode = FMODE_WRITE;
-				break;
-			case 'A':
-				*filemode = FMODE_APPEND;
-				break;
-		}
-	}
-}
-
-
-/*
  *  Search file in directory, find first track and sector
  *  false: not found, true: found
  */
 
-bool D64Drive::find_file(char *filename, int *track, int *sector)
+bool D64Drive::find_file(const uint8 *pattern, int *track, int *sector)
 {
 	int i, j;
-	uint8 *p, *q;
+	const uint8 *p, *q;
 	DirEntry *de;
 
 	// Scan all directory blocks
@@ -308,7 +249,7 @@ bool D64Drive::find_file(char *filename, int *track, int *sector)
 			*sector = de->sector;
 
 			if (de->type) {
-				p = (uint8 *)filename;
+				p = pattern;
 				q = de->name;
 				for (i=0; i<16 && *p; i++, p++, q++) {
 					if (*p == '*')	// Wildcard '*' matches all following characters
@@ -373,24 +314,24 @@ static bool match(uint8 *p, uint8 *n)
 	return *n == 0xa0;
 }
 
-uint8 D64Drive::open_directory(char *pattern)
+uint8 D64Drive::open_directory(const uint8 *pattern, int pattern_len)
 {
-	int i, j, n, m;
-	uint8 *p, *q;
-	DirEntry *de;
-	uint8 c;
-	char *tmppat;
-
 	// Special treatment for "$0"
-	if (pattern[0] == '0' && pattern[1] == 0)
-		pattern += 1;
+	if (pattern[0] == '0' && pattern[1] == 0) {
+		pattern++;
+		pattern_len--;
+	}
 
 	// Skip everything before the ':' in the pattern
-	if ((tmppat = strchr(pattern, ':')) != NULL)
-		pattern = tmppat + 1;
+	uint8 *t = (uint8 *)memchr(pattern, ':', pattern_len);
+	if (t) {
+		t++;
+		pattern_len -= t - pattern;
+		pattern = t;
+	}
 
-	p = buf_ptr[0] = chan_buf[0] = new uint8[8192];
 	chan_mode[0] = CHMOD_DIRECTORY;
+	uint8 *p = buf_ptr[0] = chan_buf[0] = new uint8[8192];
 
 	// Create directory title
 	*p++ = 0x01;	// Load address $0401 (from PET days :-)
@@ -402,8 +343,9 @@ uint8 D64Drive::open_directory(char *pattern)
 	*p++ = 0x12;	// RVS ON
 	*p++ = '\"';
 
-	q = bam->disk_name;
-	for (i=0; i<23; i++) {
+	uint8 *q = bam->disk_name;
+	for (int i=0; i<23; i++) {
+		int c;
 		if ((c = *q++) == 0xa0)
 			*p++ = ' ';		// Replace 0xa0 by space
 		else
@@ -421,8 +363,8 @@ uint8 D64Drive::open_directory(char *pattern)
 			return ST_OK;
 
 		// Scan all 8 entries of a block
-		for (j=0; j<8; j++) {
-			de = &dir.entry[j];
+		for (int j=0; j<8; j++) {
+			DirEntry *de = &dir.entry[j];
 
 			if (de->type && match((uint8 *)pattern, de->name)) {
 				*p++ = 0x01; // Dummy line link
@@ -432,17 +374,18 @@ uint8 D64Drive::open_directory(char *pattern)
 				*p++ = de->num_blocks_h;
 
 				*p++ = ' ';
-				n = (de->num_blocks_h << 8) + de->num_blocks_l;
+				int n = (de->num_blocks_h << 8) + de->num_blocks_l;
 				if (n<10) *p++ = ' ';
 				if (n<100) *p++ = ' ';
 
 				*p++ = '\"';
 				q = de->name;
-				m = 0;
-				for (i=0; i<16; i++) {
+				uint8 c;
+				int m = 0;
+				for (int i=0; i<16; i++) {
 					if ((c = *q++) == 0xa0) {
 						if (m)
-							*p++ = ' ';		// Replace all 0xa0 by spaces
+							*p++ = ' ';			// Replace all 0xa0 by spaces
 						else
 							m = *p++ = '\"';	// But the first by a '"'
 					} else
@@ -453,20 +396,24 @@ uint8 D64Drive::open_directory(char *pattern)
 				else
 					*p++ = '\"';			// No 0xa0, then append a space
 
+				// Open files are marked by '*'
 				if (de->type & 0x80)
 					*p++ = ' ';
 				else
 					*p++ = '*';
 
+				// File type
 				*p++ = type_char_1[de->type & 0x0f];
 				*p++ = type_char_2[de->type & 0x0f];
 				*p++ = type_char_3[de->type & 0x0f];
 
+				// Protected files are marked by '<'
 				if (de->type & 0x40)
 					*p++ = '<';
 				else
 					*p++ = ' ';
 
+				// Appropriate number of spaces at the end
 				*p++ = ' ';
 				if (n >= 10) *p++ = ' ';
 				if (n >= 100) *p++ = ' ';
@@ -475,14 +422,12 @@ uint8 D64Drive::open_directory(char *pattern)
 		}
 	}
 
-	// Final line
-	q = p;
-	for (i=0; i<29; i++)
-		*q++ = ' ';
-
-	n = 0;
-	for (i=0; i<35; i++)
-		n += bam->bitmap[i*4];
+	// Final line, count number of free blocks
+	int n = 0;
+	for (int i=0; i<35; i++) {
+		if (i != 17) // exclude directory track
+			n += bam->bitmap[i*4];
+	}
 
 	*p++ = 0x01;		// Dummy line link
 	*p++ = 0x01;
@@ -502,7 +447,9 @@ uint8 D64Drive::open_directory(char *pattern)
 	*p++ = 'E';
 	*p++ = '.';
 
-	p = q;
+	memset(p, ' ', 13);
+	p += 13;
+
 	*p++ = 0;
 	*p++ = 0;
 	*p++ = 0;
@@ -517,15 +464,15 @@ uint8 D64Drive::open_directory(char *pattern)
  *  Open channel for direct buffer access
  */
 
-uint8 D64Drive::open_direct(int channel, char *filename)
+uint8 D64Drive::open_direct(int channel, const uint8 *name)
 {
 	int buf = -1;
 
-	if (filename[1] == 0)
+	if (name[1] == 0)
 		buf = alloc_buffer(-1);
 	else
-		if ((filename[1] >= '0') && (filename[1] <= '3') && (filename[2] == 0))
-			buf = alloc_buffer(filename[1] - '0');
+		if ((name[1] >= '0') && (name[1] <= '3') && (name[2] == 0))
+			buf = alloc_buffer(name[1] - '0');
 
 	if (buf == -1) {
 		set_error(ERR_NOCHANNEL);
@@ -657,15 +604,14 @@ uint8 D64Drive::Write(int channel, uint8 byte, bool eoi)
 
 		case CHMOD_COMMAND:
 			// Collect characters and execute command on EOI
-			if (cmd_len >= 40)
+			if (cmd_len >= 58)
 				return ST_TIMEOUT;
 
-			cmd_buffer[cmd_len++] = byte;
+			cmd_buf[cmd_len++] = byte;
 
 			if (eoi) {
-				cmd_buffer[cmd_len++] = 0;
+				execute_cmd(cmd_buf, cmd_len);
 				cmd_len = 0;
-				execute_command(cmd_buffer);
 			}
 			return ST_OK;
 
@@ -681,226 +627,68 @@ uint8 D64Drive::Write(int channel, uint8 byte, bool eoi)
  *  Execute command string
  */
 
-void D64Drive::execute_command(char *command)
+// BLOCK-READ:channel,0,track,sector
+void D64Drive::block_read_cmd(int channel, int track, int sector, bool user_cmd)
 {
-	uint16 adr;
-	int len;
-
-	switch (command[0]) {
-		case 'B':
-			if (command[1] != '-')
-				set_error(ERR_SYNTAX30);
-			else
-				switch (command[2]) {
-					case 'R':
-						block_read_cmd(&command[3]);
-						break;
-
-					case 'P':
-						buffer_ptr_cmd(&command[3]);
-						break;
-
-					case 'A':
-					case 'F':
-					case 'W':
-						set_error(ERR_WRITEPROTECT);
-						break;
-
-					default:
-						set_error(ERR_SYNTAX30);
-						break;
-				}
-			break;
-
-		case 'M':
-			if (command[1] != '-')
-				set_error(ERR_SYNTAX30);
-			else
-				switch (command[2]) {
-					case 'R':
-						adr = ((uint8)command[4] << 8) | ((uint8)command[3]);
-						error_ptr = (char *)(ram + (adr & 0x07ff));
-						if (!(error_len = (uint8)command[5]))
-							error_len = 1;
-						break;
-
-					case 'W':
-						adr = ((uint8)command[4] << 8) | ((uint8)command[3]);
-						len = (uint8)command[5];
-						for (int i=0; i<len; i++)
-							ram[adr+i] = (uint8)command[i+6];
-						break;
-
-					default:
-						set_error(ERR_SYNTAX30);
-				}
-			break;
-
-		case 'I':
-			close_all_channels();
-			read_sector(18, 0, (uint8 *)bam);
-			set_error(ERR_OK);
-			break;
-
-		case 'U':
-			switch (command[1] & 0x0f) {
-				case 1:		// U1/UA: Block-Read
-					block_read_cmd(&command[2]);
-					break;
-
-				case 2:		// U2/UB: Block-Write
-					set_error(ERR_WRITEPROTECT);
-					break;
-
-				case 10:	// U:/UJ: Reset
-					Reset();
-					break;
-
-				default:
-					set_error(ERR_SYNTAX30);
-					break;
-			}
-			break;
-
-		case 'G':
-			if (command[1] != ':')
-				set_error(ERR_SYNTAX30);
-			else
-				chd64_cmd(&command[2]);
-			break;
-
-		case 'C':
-		case 'N':
-		case 'R':
-		case 'S':
-		case 'V':
-			set_error(ERR_WRITEPROTECT);
-			break;
-
-		default:
-			set_error(ERR_SYNTAX30);
-			break;
+	if (channel >= 16 || chan_mode[channel] != CHMOD_DIRECT) {
+		set_error(ERR_NOCHANNEL);
+		return;
+	}
+	read_sector(track, sector, chan_buf[channel]);
+	if (user_cmd) {
+		buf_len[channel] = 256;
+		buf_ptr[channel] = chan_buf[channel];
+	} else {
+		buf_len[channel] = chan_buf[channel][0];
+		buf_ptr[channel] = chan_buf[channel] + 1;
 	}
 }
 
-
-/*
- *  Execute B-R command
- */
-
-void D64Drive::block_read_cmd(char *command)
+// BUFFER-POINTER:channel,pos
+void D64Drive::buffer_pointer_cmd(int channel, int pos)
 {
-	int channel, drvnum, track, sector;
-
-	if (parse_bcmd(command, &channel, &drvnum, &track, &sector)) {
-		if (chan_mode[channel] == CHMOD_DIRECT) {
-			read_sector(track, sector, buf_ptr[channel] = chan_buf[channel]);
-			buf_len[channel] = 256;
-			set_error(ERR_OK);
-		} else
-			set_error(ERR_NOCHANNEL);
-	} else
-		set_error(ERR_SYNTAX30);
+	if (channel >= 16 || chan_mode[channel] != CHMOD_DIRECT) {
+		set_error(ERR_NOCHANNEL);
+		return;
+	}
+	buf_ptr[channel] = chan_buf[channel] + pos;
+	buf_len[channel] = 256 - pos;
 }
 
-
-/*
- *  Execute B-P command
- */
-
-void D64Drive::buffer_ptr_cmd(char *command)
+// M-R<adr low><adr high>[<number>]
+void D64Drive::mem_read_cmd(uint16 adr, uint8 len)
 {
-	int channel, pointer, i;
-
-	if (parse_bcmd(command, &channel, &pointer, &i, &i)) {
-		if (chan_mode[channel] == CHMOD_DIRECT) {
-			buf_ptr[channel] = chan_buf[channel] + pointer;
-			buf_len[channel] = 256 - pointer;
-			set_error(ERR_OK);
-		} else
-			set_error(ERR_NOCHANNEL);
-	} else
-		set_error(ERR_SYNTAX30);
+	error_len = len;
+	if (adr >= 0x300 && adr < 0x1000) {
+		// Read from RAM
+		error_ptr = (char *)ram + (adr & 0x7ff);
+	} else {
+		unsupp_cmd();
+		memset(error_buf, 0, len);
+		error_ptr = error_buf;
+	}
 }
 
-
-/*
- *  Parse block command parameters
- *  true: OK, false: error
- */
-
-bool D64Drive::parse_bcmd(char *cmd, int *arg1, int *arg2, int *arg3, int *arg4)
+// M-W<adr low><adr high><number><data...>
+void D64Drive::mem_write_cmd(uint16 adr, uint8 len, uint8 *p)
 {
-	int i;
-
-	if (*cmd == ':') cmd++;
-
-	// Read four parameters separated by space, cursor right or comma
-	while (*cmd == ' ' || *cmd == 0x1d || *cmd == 0x2c) cmd++;
-	if (!*cmd) return false;
-
-	i = 0;
-	while (*cmd >= 0x30 && *cmd < 0x40) {
-		i *= 10;
-		i += *cmd++ & 0x0f;
+	while (len) {
+		if (adr >= 0x300 && adr < 0x1000) {
+			// Write to RAM
+			ram[adr & 0x7ff] = *p;
+		} else if (adr < 0xc000) {
+			unsupp_cmd();
+			return;
+		}
+		len--; adr++; p++;
 	}
-	*arg1 = i & 0xff;
-
-	while (*cmd == ' ' || *cmd == 0x1d || *cmd == 0x2c) cmd++;
-	if (!*cmd) return false;
-
-	i = 0;
-	while (*cmd >= 0x30 && *cmd < 0x40) {
-		i *= 10;
-		i += *cmd++ & 0x0f;
-	}
-	*arg2 = i & 0xff;
-
-	while (*cmd == ' ' || *cmd == 0x1d || *cmd == 0x2c) cmd++;
-	if (!*cmd) return false;
-
-	i = 0;
-	while (*cmd >= 0x30 && *cmd < 0x40) {
-		i *= 10;
-		i += *cmd++ & 0x0f;
-	}
-	*arg3 = i & 0xff;
-
-	while (*cmd == ' ' || *cmd == 0x1d || *cmd == 0x2c) cmd++;
-	if (!*cmd) return false;
-
-	i = 0;
-	while (*cmd >= 0x30 && *cmd < 0x40) {
-		i *= 10;
-		i += *cmd++ & 0x0f;
-	}
-	*arg4 = i & 0xff;
-
-	return true;
 }
 
-
-/*
- *  Execute 'G' command
- */
-
-void D64Drive::chd64_cmd(char *d64name)
+// INITIALIZE
+void D64Drive::initialize_cmd(void)
 {
-	char str[NAMEBUF_LENGTH];
-	char *p = str;
-
-	// Convert .d64 file name
-	for (int i=0; i<NAMEBUF_LENGTH && (*p++ = conv_from_64(*d64name++, false)); i++) ;
-
+	// Close all channels and re-read BAM
 	close_all_channels();
-
-	// G:. resets the .d64 file name to its original setting
-	if (str[0] == '.' && str[1] == 0)
-		open_close_d64_file(orig_d64_name);
-	else
-		open_close_d64_file(str);
-
-	// Read BAM
 	read_sector(18, 0, (uint8 *)bam);
 }
 
@@ -1021,20 +809,4 @@ int D64Drive::offset_from_ts(int track, int sector)
 		return -1;
 
 	return (sector_offset[track] + sector) << 8;
-}
-
-
-/*
- *  Conversion PETSCII->ASCII
- */
-
-uint8 D64Drive::conv_from_64(uint8 c, bool map_slash)
-{
-	if ((c >= 'A') && (c <= 'Z') || (c >= 'a') && (c <= 'z'))
-		return c ^ 0x20;
-	if ((c >= 0xc1) && (c <= 0xda))
-		return c ^ 0x80;
-	if ((c == '/') && map_slash && ThePrefs.MapSlash)
-		return '\\';
-	return c;
 }

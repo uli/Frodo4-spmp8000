@@ -43,20 +43,6 @@
 #include "Prefs.h"
 
 
-// Access modes
-enum {
-	FMODE_READ, FMODE_WRITE, FMODE_APPEND
-};
-
-// File types
-enum {
-	FTYPE_PRG, FTYPE_SEQ, FTYPE_USR, FTYPE_REL
-};
-
-// Prototypes
-static bool match(char *p, char *n);
-
-
 /*
  *  Constructor: Prepare emulation
  */
@@ -145,7 +131,7 @@ bool T64Drive::parse_t64_file(void)
 {
 	uint8 buf[32];
 	uint8 *buf2;
-	char *p;
+	uint8 *p;
 	int max, i, j;
 
 	// Read header and get maximum number of files contained
@@ -260,13 +246,13 @@ bool T64Drive::parse_lynx_file(void)
  *  Open channel
  */
 
-uint8 T64Drive::Open(int channel, char *filename)
+uint8 T64Drive::Open(int channel, const uint8 *name, int name_len)
 {
 	set_error(ERR_OK);
 
 	// Channel 15: Execute file name as command
 	if (channel == 15) {
-		execute_command(filename);
+		execute_cmd(name, name_len);
 		return ST_OK;
 	}
 
@@ -276,7 +262,7 @@ uint8 T64Drive::Open(int channel, char *filename)
 		file[channel] = NULL;
 	}
 
-	if (filename[0] == '#') {
+	if (name[0] == '#') {
 		set_error(ERR_NOCHANNEL);
 		return ST_OK;
 	}
@@ -286,10 +272,10 @@ uint8 T64Drive::Open(int channel, char *filename)
 		return ST_OK;
 	}
 
-	if (filename[0] == '$')
-		return open_directory(channel, filename+1);
+	if (name[0] == '$')
+		return open_directory(channel, name + 1, name_len - 1);
 
-	return open_file(channel, filename);
+	return open_file(channel, name, name_len);
 }
 
 
@@ -297,33 +283,45 @@ uint8 T64Drive::Open(int channel, char *filename)
  *  Open file
  */
 
-uint8 T64Drive::open_file(int channel, char *filename)
+uint8 T64Drive::open_file(int channel, const uint8 *name, int name_len)
 {
-	char plainname[NAMEBUF_LENGTH];
-	int filemode = FMODE_READ;
-	int filetype = FTYPE_PRG;
-	int num;
+	uint8 plain_name[NAMEBUF_LENGTH];
+	int plain_name_len;
+	int mode = FMODE_READ;
+	int type = FTYPE_PRG;
+	int rec_len;
+	parse_file_name(name, name_len, plain_name, plain_name_len, mode, type, rec_len);
 
-	convert_filename(filename, plainname, &filemode, &filetype);
-
-	// Channel 0 is READ PRG, channel 1 is WRITE PRG
-	if (!channel) {
-		filemode = FMODE_READ;
-		filetype = FTYPE_PRG;
+	// Channel 0 is READ, channel 1 is WRITE
+	if (channel == 0 || channel == 1) {
+		mode = channel ? FMODE_WRITE : FMODE_READ;
+		if (type == FTYPE_DEL)
+			type = FTYPE_PRG;
 	}
-	if (channel == 1) {
-		filemode = FMODE_WRITE;
-		filetype = FTYPE_PRG;
+
+	bool writing = (mode == FMODE_WRITE || mode == FMODE_APPEND);
+
+	// Wildcards are only allowed on reading
+	if (writing && (strchr((const char *)plain_name, '*') || strchr((const char *)plain_name, '?'))) {
+		set_error(ERR_SYNTAX33);
+		return ST_OK;
 	}
 
 	// Allow only read accesses
-	if (filemode != FMODE_READ) {
+	if (writing) {
 		set_error(ERR_WRITEPROTECT);
 		return ST_OK;
 	}
 
+	// Relative files are not supported
+	if (type == FTYPE_REL) {
+		set_error(ERR_UNIMPLEMENTED);
+		return ST_OK;
+	}
+
 	// Find file
-	if (find_first_file(plainname, filetype, &num)) {
+	int num;
+	if (find_first_file(plain_name, plain_name_len, num)) {
 
 		// Open temporary file
 		if ((file[channel] = tmpfile()) != NULL) {
@@ -342,7 +340,7 @@ uint8 T64Drive::open_file(int channel, char *filename)
 			rewind(file[channel]);
 			delete[] buf;
 
-			if (filemode == FMODE_READ)	// Read and buffer first byte
+			if (mode == FMODE_READ)	// Read and buffer first byte
 				read_char[channel] = fgetc(file[channel]);
 		}
 	} else
@@ -353,89 +351,31 @@ uint8 T64Drive::open_file(int channel, char *filename)
 
 
 /*
- *  Analyze file name, get access mode and type
- */
-
-void T64Drive::convert_filename(char *srcname, char *destname, int *filemode, int *filetype)
-{
-	char *p;
-
-	// Search for ':', p points to first character after ':'
-	if ((p = strchr(srcname, ':')) != NULL)
-		p++;
-	else
-		p = srcname;
-
-	// Remaining string -> destname
-	strncpy(destname, p, NAMEBUF_LENGTH);
-
-	// Search for ','
-	p = destname;
-	while (*p && (*p != ',')) p++;
-
-	// Look for mode parameters seperated by ','
-	p = destname;
-	while ((p = strchr(p, ',')) != NULL) {
-
-		// Cut string after the first ','
-		*p++ = 0;
-
-		switch (*p) {
-			case 'P':
-				*filetype = FTYPE_PRG;
-				break;
-			case 'S':
-				*filetype = FTYPE_SEQ;
-				break;
-			case 'U':
-				*filetype = FTYPE_USR;
-				break;
-			case 'L':
-				*filetype = FTYPE_REL;
-				break;
-			case 'R':
-				*filemode = FMODE_READ;
-				break;
-			case 'W':
-				*filemode = FMODE_WRITE;
-				break;
-			case 'A':
-				*filemode = FMODE_APPEND;
-				break;
-		}
-	}
-}
-
-
-/*
  *  Find first file matching wildcard pattern
  */
 
 // Return true if name 'n' matches pattern 'p'
-static bool match(char *p, char *n)
+static bool match(const uint8 *p, int p_len, const uint8 *n)
 {
-	if (!*p)		// Null pattern matches everything
-		return true;
-
-	do {
+	while (p_len-- > 0) {
 		if (*p == '*')	// Wildcard '*' matches all following characters
 			return true;
 		if ((*p != *n) && (*p != '?'))	// Wildcard '?' matches single character
 			return false;
 		p++; n++;
-	} while (*p);
+	}
 
-	return !(*n);
+	return *n == 0;
 }
 
-bool T64Drive::find_first_file(char *name, int type, int *num)
+bool T64Drive::find_first_file(const uint8 *pattern, int pattern_len, int &num)
 {
-	for (int i=0; i<num_files; i++)
-		if (match(name, file_info[i].name) && type == file_info[i].type) {
-			*num = i;
+	for (int i=0; i<num_files; i++) {
+		if (match(pattern, pattern_len, file_info[i].name)) {
+			num = i;
 			return true;
 		}
-
+	}
 	return false;
 }
 
@@ -444,61 +384,61 @@ bool T64Drive::find_first_file(char *name, int type, int *num)
  *  Open directory, create temporary file
  */
 
-uint8 T64Drive::open_directory(int channel, char *filename)
+uint8 T64Drive::open_directory(int channel, const uint8 *pattern, int pattern_len)
 {
-	char buf[] = "\001\004\001\001\0\0\022\042                \042 00 2A";
-	char str[NAMEBUF_LENGTH];
-	char pattern[NAMEBUF_LENGTH];
-	char *p, *q;
-	int i, num;
-	int filemode;
-	int filetype;
-
 	// Special treatment for "$0"
-	if (strlen(filename) == 1 && filename[0] == '0')
-		filename += 1;
+	if (pattern[0] == '0' && pattern_len == 1) {
+		pattern++;
+		pattern_len--;
+	}
 
-	// Convert filename ('$' already stripped), filemode/type are ignored
-	convert_filename(filename, pattern, &filemode, &filetype);
+	// Skip everything before the ':' in the pattern
+	uint8 *t = (uint8 *)memchr(pattern, ':', pattern_len);
+	if (t) {
+		t++;
+		pattern_len -= t - pattern;
+		pattern = t;
+	}
 
 	// Create temporary file
 	if ((file[channel] = tmpfile()) == NULL)
 		return ST_OK;
 
 	// Create directory title
-	p = &buf[8];
-	for (i=0; i<16 && dir_title[i]; i++)
-		*p++ = dir_title[i];
+	uint8 buf[] = "\001\004\001\001\0\0\022\042                \042 00 2A";
+	for (int i=0; i<16 && dir_title[i]; i++)
+		buf[i + 8] = dir_title[i];
 	fwrite(buf, 1, 32, file[channel]);
 
 	// Create and write one line for every directory entry
-	for (num=0; num<num_files; num++) {
+	for (int num=0; num<num_files; num++) {
 
 		// Include only files matching the pattern
-		if (match(pattern, file_info[num].name)) {
+		if (pattern_len == 0 || match(pattern, pattern_len, file_info[num].name)) {
 
 			// Clear line with spaces and terminate with null byte
 			memset(buf, ' ', 31);
 			buf[31] = 0;
 
-			p = buf;
+			uint8 *p = buf;
 			*p++ = 0x01;	// Dummy line link
 			*p++ = 0x01;
 
 			// Calculate size in blocks (254 bytes each)
-			i = (file_info[num].length + 254) / 254;
-			*p++ = i & 0xff;
-			*p++ = (i >> 8) & 0xff;
+			int n = (file_info[num].length + 254) / 254;
+			*p++ = n & 0xff;
+			*p++ = (n >> 8) & 0xff;
 
 			p++;
-			if (i < 10) p++;	// Less than 10: add one space
-			if (i < 100) p++;	// Less than 100: add another space
+			if (n < 10) p++;	// Less than 10: add one space
+			if (n < 100) p++;	// Less than 100: add another space
 
 			// Convert and insert file name
-			strcpy(str, file_info[num].name);
+			uint8 str[NAMEBUF_LENGTH];
+			memcpy(str, file_info[num].name, 17);
 			*p++ = '\"';
-			q = p;
-			for (i=0; i<16 && str[i]; i++)
+			uint8 *q = p;
+			for (int i=0; i<16 && str[i]; i++)
 				*q++ = str[i];
 			*q++ = '\"';
 			p += 18;
@@ -623,15 +563,14 @@ uint8 T64Drive::Write(int channel, uint8 byte, bool eoi)
 {
 	// Channel 15: Collect chars and execute command on EOI
 	if (channel == 15) {
-		if (cmd_len >= 40)
+		if (cmd_len >= 58)
 			return ST_TIMEOUT;
 		
-		cmd_buffer[cmd_len++] = byte;
+		cmd_buf[cmd_len++] = byte;
 
 		if (eoi) {
-			cmd_buffer[cmd_len] = 0;
+			execute_cmd(cmd_buf, cmd_len);
 			cmd_len = 0;
-			execute_command(cmd_buffer);
 		}
 		return ST_OK;
 	}
@@ -646,59 +585,39 @@ uint8 T64Drive::Write(int channel, uint8 byte, bool eoi)
 
 
 /*
- *  Execute command string
+ *  Execute drive commands
  */
 
-void T64Drive::execute_command(char *command)
+// RENAME:new=old
+//        ^   ^
+// new_file   old_file
+void T64Drive::rename_cmd(const uint8 *new_file, int new_file_len, const uint8 *old_file, int old_file_len)
 {
-	switch (command[0]) {
-		case 'I':
-			close_all_channels();
-			set_error(ERR_OK);
-			break;
-
-		case 'U':
-			if ((command[1] & 0x0f) == 0x0a) {
-				Reset();
-			} else
-				set_error(ERR_SYNTAX30);
-			break;
-
-		case 'G':
-			if (command[1] != ':')
-				set_error(ERR_SYNTAX30);
-			else
-				cht64_cmd(&command[2]);
-			break;
-
-		default:
-			set_error(ERR_SYNTAX30);
+	// Check if destination file is already present
+	int num;
+	if (find_first_file(new_file, new_file_len, num)) {
+		set_error(ERR_FILEEXISTS);
+		return;
 	}
+
+	// Check if source file is present
+	if (!find_first_file(old_file, old_file_len, num)) {
+		set_error(ERR_FILENOTFOUND);
+		return;
+	}
+
+	set_error(ERR_WRITEPROTECT);
 }
 
-
-/*
- *  Execute 'G' command
- */
-
-void T64Drive::cht64_cmd(char *t64name)
+// INITIALIZE
+void T64Drive::initialize_cmd(void)
 {
-	char str[NAMEBUF_LENGTH];
-	char *p = str;
-
-	// Convert .t64 file name
-	for (int i=0; i<NAMEBUF_LENGTH && (*p++ = conv_from_64(*t64name++, false)); i++) ;
-
 	close_all_channels();
+}
 
-	// G:. resets the .t64 file name to its original setting
-	if (str[0] == '.' && str[1] == 0)
-		open_close_t64_file(orig_t64_name);
-	else
-		open_close_t64_file(str);
-
-	if (the_file == NULL)
-		set_error(ERR_NOTREADY);
+// VALIDATE
+void T64Drive::validate_cmd(void)
+{
 }
 
 
@@ -711,20 +630,4 @@ void T64Drive::Reset(void)
 	close_all_channels();
 	cmd_len = 0;	
 	set_error(ERR_STARTUP);
-}
-
-
-/*
- *  Conversion PETSCII->ASCII
- */
-
-uint8 T64Drive::conv_from_64(uint8 c, bool map_slash)
-{
-	if ((c >= 'A') && (c <= 'Z') || (c >= 'a') && (c <= 'z'))
-		return c ^ 0x20;
-	if ((c >= 0xc1) && (c <= 0xda))
-		return c ^ 0x80;
-	if ((c == '/') && map_slash && ThePrefs.MapSlash)
-		return '\\';
-	return c;
 }
