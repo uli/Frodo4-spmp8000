@@ -525,15 +525,15 @@ void T64Drive::close_all_channels(void)
  *  Read from channel
  */
 
-uint8 T64Drive::Read(int channel, uint8 *byte)
+uint8 T64Drive::Read(int channel, uint8 &byte)
 {
 	int c;
 
 	// Channel 15: Error channel
 	if (channel == 15) {
-		*byte = *error_ptr++;
+		byte = *error_ptr++;
 
-		if (*byte != '\r')
+		if (byte != '\r')
 			return ST_OK;
 		else {	// End of message
 			set_error(ERR_OK);
@@ -544,7 +544,7 @@ uint8 T64Drive::Read(int channel, uint8 *byte)
 	if (!file[channel]) return ST_READ_TIMEOUT;
 
 	// Get char from buffer and read next
-	*byte = read_char[channel];
+	byte = read_char[channel];
 	c = fgetc(file[channel]);
 	if (c == EOF)
 		return ST_EOF;

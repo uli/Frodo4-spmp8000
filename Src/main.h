@@ -71,8 +71,6 @@ public:
 	virtual bool QuitRequested(void);
 	virtual void AboutRequested(void);
 
-	C64 *TheC64;
-
 private:
 	void load_rom(const char *which, const char *path, uint8 *where, size_t size, const uint8 *builtin);
 	void load_rom_files();
@@ -100,8 +98,6 @@ public:
 	void ArgvReceived(int argc, char **argv);
 	void ReadyToRun(void);
 	void RunPrefsEditor(void);
-
-	C64 *TheC64;
 
 private:
 	void load_rom(const char *which, const char *path, uint8 *where, size_t size, const uint8 *builtin);
@@ -131,8 +127,6 @@ public:
 	void ReadyToRun(void);
 	static Prefs *reload_prefs(void);
 
-	C64 *TheC64;
-
 private:
 	void load_rom(const char *which, const char *path, uint8 *where, size_t size, const uint8 *builtin);
 	void load_rom_files();
@@ -154,7 +148,6 @@ public:
 	Frodo();
 
 	void Run(void);
-	C64 *TheC64;
 
 private:
 	void load_rom(const char *which, const char *path, uint8 *where, size_t size, const uint8 *builtin);
@@ -178,7 +171,6 @@ public:
 	void ReadyToRun();
 	void RunPrefsEditor();
 
-	C64 *TheC64;
 	char prefs_path[256];	// Pathname of current preferences file
 
 private:
@@ -234,14 +226,15 @@ public:
 	~Frodo();
 	void ReadyToRun(void);
 
-	C64 *TheC64;
-
 private:
 	void load_rom(const char *which, const char *path, uint8 *where, size_t size, const uint8 *builtin);
 	void load_rom_files();
 };
 
 #endif
+
+// Global C64 object
+extern C64 *TheC64;
 
 
 #endif

@@ -30,7 +30,7 @@ public:
 	virtual ~FSDrive();
 	virtual uint8 Open(int channel, const uint8 *name, int name_len);
 	virtual uint8 Close(int channel);
-	virtual uint8 Read(int channel, uint8 *byte);
+	virtual uint8 Read(int channel, uint8 &byte);
 	virtual uint8 Write(int channel, uint8 byte, bool eoi);
 	virtual void Reset(void);
 

@@ -210,12 +210,12 @@ uint8 IEC::OutSec(uint8 byte)
  *  Read one byte
  */
 
-uint8 IEC::In(uint8 *byte)
+uint8 IEC::In(uint8 &byte)
 {
 	if (talker_active && (received_cmd == CMD_DATA))
 		return data_in(byte);
 
-	*byte = 0;
+	byte = 0;
 	return ST_TIMEOUT;
 }
 
@@ -388,7 +388,7 @@ uint8 IEC::data_out(uint8 byte, bool eoi)
  *  Read byte from channel
  */
 
-uint8 IEC::data_in(uint8 *byte)
+uint8 IEC::data_in(uint8 &byte)
 {
 	return talker->Read(sec_addr, byte);
 }
@@ -451,6 +451,7 @@ void Drive::set_error(int error, int track, int sector)
 	sprintf(error_buf, Errors_1541[error], track, sector);
 	error_ptr = error_buf;
 	error_len = strlen(error_buf);
+	current_error = error;
 
 	// Set drive condition
 	if (error != ERR_OK && error != ERR_SCRATCHED)

@@ -135,7 +135,7 @@ public:
 	uint8 Out(uint8 byte, bool eoi);
 	uint8 OutATN(uint8 byte);
 	uint8 OutSec(uint8 byte);
-	uint8 In(uint8 *byte);
+	uint8 In(uint8 &byte);
 	void SetATN(void);
 	void RelATN(void);
 	void Turnaround(void);
@@ -150,7 +150,7 @@ private:
 	uint8 sec_talk(void);
 	uint8 open_out(uint8 byte, bool eoi);
 	uint8 data_out(uint8 byte, bool eoi);
-	uint8 data_in(uint8 *byte);
+	uint8 data_in(uint8 &byte);
 
 	C64Display *the_display;	// Pointer to display object (for drive LEDs)
 
@@ -180,7 +180,7 @@ public:
 
 	virtual uint8 Open(int channel, const uint8 *name, int name_len)=0;
 	virtual uint8 Close(int channel)=0;
-	virtual uint8 Read(int channel, uint8 *byte)=0;
+	virtual uint8 Read(int channel, uint8 &byte)=0;
 	virtual uint8 Write(int channel, uint8 byte, bool eoi)=0;
 	virtual void Reset(void)=0;
 
@@ -214,6 +214,7 @@ protected:
 	char error_buf[256];	// Buffer with current error message
 	char *error_ptr;		// Pointer within error message	
 	int error_len;			// Remaining length of error message
+	int current_error;		// Number of current error
 
 	uint8 cmd_buf[64];		// Buffer for incoming command strings
 	int cmd_len;			// Length of received command

@@ -811,7 +811,7 @@ handle_int:
 					jump(0xedac);
 					break;
 				case 0x03:
-					ram[0x90] |= TheIEC->In(&a);
+					ram[0x90] |= TheIEC->In(a);
 					set_nz(a);
 					c_flag = false;
 					jump(0xedac);

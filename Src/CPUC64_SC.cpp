@@ -630,7 +630,7 @@ void MOS6510::EmulateCycle(void)
 					pc = 0xedac;
 					Last;
 				case 0x03:
-					ram[0x90] |= TheIEC->In(&a);
+					ram[0x90] |= TheIEC->In(a);
 					set_nz(a);
 					c_flag = false;
 					pc = 0xedac;

@@ -1,5 +1,5 @@
 /*
- *  1541d64.h - 1541 emulation in .d64 file
+ *  1541d64.h - 1541 emulation in disk image files (.d64/.x64/zipcode)
  *
  *  Frodo (C) 1994-1997,2002-2003 Christian Bauer
  *
@@ -24,97 +24,148 @@
 #include "IEC.h"
 
 
-// BAM structure
-typedef struct {
-	uint8	dir_track;		// Track...
-	uint8	dir_sector;		// ...and sector of first directory block
-	int8	fmt_type;		// Format type
-	int8	pad0;
-	uint8	bitmap[4*35];	// Sector allocation
-	uint8	disk_name[18];	// Disk name
-	uint8	id[2];			// Disk ID
-	int8	pad1;
-	uint8	fmt_char[2];	// Format characters
-	int8	pad2[4];
-	int8	pad3[85];
-} BAM;
+/*
+ *  Definitions
+ */
 
-// Directory entry structure
-typedef struct {
-	uint8	type;			// File type
-	uint8	track;			// Track...
-	uint8	sector;			// ...and sector of first data block
-	uint8	name[16];		// File name
-	uint8	side_track;		// Track...
-	uint8	side_sector;	// ...and sector of first side sector
-	uint8	rec_len;		// Record length
-	int8	pad0[4];
-	uint8	ovr_track;		// Track...
-	uint8	ovr_sector;		// ...and sector on overwrite
-	uint8	num_blocks_l;	// Number of blocks, LSB
-	uint8	num_blocks_h;	// Number of blocks, MSB
-	int8	pad1[2];
-} DirEntry;
+// Constants
+const int NUM_SECTORS_35 = 683;	// Number of sectors in a 35-track image
+const int NUM_SECTORS_40 = 768;	// Number of sectors in a 40-track image
 
-// Directory block structure
-typedef struct {
-	uint8		padding[2];		// Keep DirEntry word-aligned
-	uint8		next_track;
-	uint8		next_sector;
-	DirEntry	entry[8];
-} Directory;
+// Disk image types
+enum {
+	TYPE_D64,			// D64 file
+	TYPE_ED64,			// Converted zipcode file (D64 with header ID)
+	TYPE_X64			// x64 file
+};
 
+// Channel descriptor
+struct channel_desc {
+	int mode;			// Channel mode
+	bool writing;		// Flag: writing to file (for file channels)
+	int buf_num;		// Buffer number for direct access and file channels
+	uint8 *buf;			// Pointer to start of buffer
+	uint8 *buf_ptr;		// Pointer to current position in buffer
+	int buf_len;		// Remaining bytes in buffer
+	int track, sector;	// Track and sector the buffer will be written to (for writing to file channels)
+	int num_blocks;		// Number of blocks in file (for writing to file channels)
+	int dir_track;		// Track...
+	int dir_sector;		// ...and sector of directory block containing file entry
+	int entry;			// Number of entry in directory block
+};
 
+// Disk image file descriptor
+struct image_file_desc {
+	int type;				// See definitions above
+	int header_size;		// Size of file header
+	int num_tracks;			// Number of tracks
+	uint8 id1, id2;			// Block header ID (as opposed to BAM ID)
+	uint8 error_info[NUM_SECTORS_40]; // Sector error information (1 byte/sector)
+	bool has_error_info;	// Flag: error info present in file
+};
+
+// Disk image drive class
 class D64Drive : public Drive {
 public:
-	D64Drive(IEC *iec, char *filepath);
+	D64Drive(IEC *iec, const char *filepath);
 	virtual ~D64Drive();
+
 	virtual uint8 Open(int channel, const uint8 *name, int name_len);
 	virtual uint8 Close(int channel);
-	virtual uint8 Read(int channel, uint8 *byte);
+	virtual uint8 Read(int channel, uint8 &byte);
 	virtual uint8 Write(int channel, uint8 byte, bool eoi);
 	virtual void Reset(void);
 
 private:
-	void open_close_d64_file(char *d64name);
+	void close_image(void);
+	bool change_image(const char *path);
 
 	uint8 open_file(int channel, const uint8 *name, int name_len);
-	bool find_file(const uint8 *pattern, int *track, int *sector);
 	uint8 open_file_ts(int channel, int track, int sector);
+	uint8 create_file(int channel, const uint8 *name, int name_len, int type, bool overwrite = false);
 	uint8 open_directory(const uint8 *pattern, int pattern_len);
-	uint8 open_direct(int channel, const uint8 *name);
-	void close_all_channels();
-
-	void block_read_cmd(int channel, int track, int sector, bool user_cmd = false);
-	void buffer_pointer_cmd(int channel, int pos);
-	void mem_read_cmd(uint16 adr, uint8 len);
-	void mem_write_cmd(uint16 adr, uint8 len, uint8 *p);
-	void initialize_cmd(void);
+	uint8 open_direct(int channel, const uint8 *filename);
+	void close_all_channels(void);
 
 	int alloc_buffer(int want);
 	void free_buffer(int buf);
+
+	bool find_file(const uint8 *pattern, int pattern_len, int &dir_track, int &dir_sector, int &entry, bool cont);
+	bool find_first_file(const uint8 *pattern, int pattern_len, int &dir_track, int &dir_sector, int &entry);
+	bool find_next_file(const uint8 *pattern, int pattern_len, int &dir_track, int &dir_sector, int &entry);
+	bool alloc_dir_entry(int &track, int &sector, int &entry);
+
+	bool is_block_free(int track, int sector);
+	int num_free_blocks(int track);
+	int alloc_block(int track, int sector);
+	int free_block(int track, int sector);
+	bool alloc_block_chain(int track, int sector);
+	bool free_block_chain(int track, int sector);
+	bool alloc_next_block(int &track, int &sector, int interleave);
+
 	bool read_sector(int track, int sector, uint8 *buffer);
-	int offset_from_ts(int track, int sector);
+	bool write_sector(int track, int sector, uint8 *buffer);
+	void write_error_info(void);
 
-	char orig_d64_name[256]; // Original path of .d64 file
+	virtual void block_read_cmd(int channel, int track, int sector, bool user_cmd = false);
+	virtual void block_write_cmd(int channel, int track, int sector, bool user_cmd = false);
+	virtual void block_allocate_cmd(int track, int sector);
+	virtual void block_free_cmd(int track, int sector);
+	virtual void buffer_pointer_cmd(int channel, int pos);
+	virtual void mem_read_cmd(uint16 adr, uint8 len);
+	virtual void mem_write_cmd(uint16 adr, uint8 len, uint8 *p);
+	virtual void copy_cmd(const uint8 *new_file, int new_file_len, const uint8 *old_files, int old_files_len);
+	virtual void rename_cmd(const uint8 *new_file, int new_file_len, const uint8 *old_file, int old_file_len);
+	virtual void scratch_cmd(const uint8 *files, int files_len);
+	virtual void initialize_cmd(void);
+	virtual void new_cmd(const uint8 *name, int name_len, const uint8 *comma);
+	virtual void validate_cmd(void);
 
-	FILE *the_file;			// File pointer for .d64 file
+	FILE *the_file;			// File pointer for image file
+	image_file_desc desc;	// Image file descriptor
+	bool write_protected;	// Flag: image file write-protected
 
-	uint8 *ram;				// 2KB 1541 RAM
-	BAM *bam;				// Pointer to BAM
-	Directory dir;			// Buffer for directory blocks
+	uint8 ram[0x800];		// 2k 1541 RAM
+	uint8 dir[258];			// Buffer for directory blocks
+	uint8 *bam;				// Pointer to BAM in 1541 RAM (buffer 4, upper 256 bytes)
+	bool bam_dirty;			// Flag: BAM modified, needs to be written back
 
-	int chan_mode[16];		// Channel mode
-	int chan_buf_num[16];	// Buffer number of channel (for direct access channels)
-	uint8 *chan_buf[16];	// Pointer to buffer
-	uint8 *buf_ptr[16];		// Pointer in buffer
-	int buf_len[16];		// Remaining bytes in buffer
-
-	bool buf_free[4];		// Buffer 0..3 free?
-
-	int image_header;		// Length of .d64 file header
-
-	uint8 error_info[683];	// Sector error information (1 byte/sector)
+	channel_desc ch[18];	// Descriptors for channels 0..17 (16 = internal read, 17 = internal write)
+	bool buf_free[4];		// Flags: buffer 0..3 free?
 };
+
+
+/*
+ *  Functions
+ */
+
+// Check whether file with given header (64 bytes) and size looks like one
+// of the file types supported by this module
+extern bool IsImageFile(const char *path, const uint8 *header, long size);
+
+// Create new blank disk image file
+extern bool CreateImageFile(const char *path);
+
+// Open disk image file
+extern FILE *open_image_file(const char *path, bool write_mode);
+
+// Parse disk image file header, fill in descriptor
+extern bool parse_image_file(FILE *f, image_file_desc &desc);
+
+// Read/write sector from/to disk image file, return error code
+extern int read_sector(FILE *f, const image_file_desc &desc, int track, int sector, uint8 *buffer);
+extern int write_sector(FILE *f, const image_file_desc &desc, int track, int sector, uint8 *buffer);
+
+// Format disk image
+extern bool format_image(FILE *f, image_file_desc &desc, bool lowlevel, uint8 id1, uint8 id2, const uint8 *disk_name, int disk_name_len);
+
+// Get number of sectors per track
+extern int sectors_per_track(const image_file_desc &desc, int track);
+
+// Get reference to error info byte of given track/sector
+extern uint8 &error_info_for_sector(image_file_desc &desc, int track, int sector);
+
+// Write error info back to image file
+extern void write_back_error_info(FILE *f, const image_file_desc &desc);
 
 #endif
