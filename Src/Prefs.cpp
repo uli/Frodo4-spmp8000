@@ -43,7 +43,7 @@ Prefs::Prefs()
 	BadLineCycles = 23;
 	CIACycles = 63;
 	FloppyCycles = 64;
-	SkipFrames = 2;
+	SkipFrames = 1;
 	LatencyMin = 80;
 	LatencyMax = 120;
 	LatencyAvg = 280;
@@ -61,7 +61,7 @@ Prefs::Prefs()
 	strcpy(ViewPort, "Default");
 	strcpy(DisplayMode, "Default");
 
-	SIDType = SIDTYPE_NONE;
+	SIDType = SIDTYPE_DIGITAL;
 	REUSize = REU_NONE;
 	DisplayType = DISPTYPE_WINDOW;
 	Joystick1Port = 0;
