@@ -44,43 +44,41 @@
 
 void DigitalRenderer::init_sound(void)
 {
-    int tmp;
-    unsigned long format;
+	int arg;
+	unsigned long format;
 
-    ready = false;
-    devfd = open("/dev/dsp", O_WRONLY);
-    if (devfd < 0)
-	return;
+	ready = false;
+	devfd = open("/dev/dsp", O_WRONLY);
+	if (devfd < 0)
+		return;
 
-    ioctl(devfd, SNDCTL_DSP_GETFMTS, &format);
-    if (!(format & AFMT_S16_LE))
-	return;
-    format = AFMT_S16_LE;
-    ioctl(devfd, SNDCTL_DSP_SETFMT, &format);
-	    
-    /*
-     * Buffer size: 2^9 == 512 bytes. Note that too large buffers will not work
-     * very well: The speed of the C64 is slowed down to an average speed of 
-     * 100% by the blocking write() call in EmulateLine(). If you use a buffer 
-     * of, say 4096 bytes, that will happen only about every 4 frames, which
-     * means that the emulation runs much faster in some frames, and much
-     * slower in others.
-     * On really fast machines, it might make sense to use an even smaller
-     * buffer size.
-     */
-    tmp = 0x00100009;
-    ioctl(devfd, SNDCTL_DSP_SETFRAGMENT, &tmp);
-    tmp = 0;
-    ioctl(devfd, SNDCTL_DSP_STEREO, &tmp);
-    tmp = 44100;
-    ioctl(devfd, SNDCTL_DSP_SPEED, &tmp);
-    ioctl(devfd, SOUND_PCM_READ_RATE, &tmp);
-    if (tmp < 43000 || tmp > 45000)
-	return;
+	ioctl(devfd, SNDCTL_DSP_GETFMTS, &format);
+	if (!(format & AFMT_S16_LE))
+		return;
+	format = AFMT_S16_LE;
+	ioctl(devfd, SNDCTL_DSP_SETFMT, &format);
 
-    ioctl(devfd, SNDCTL_DSP_GETBLKSIZE, &sndbufsize);
-    sound_buffer = new int16[sndbufsize];
-    ready = true;
+	// Buffer size: 2^9 == 512 bytes. Note that too large buffers will not work
+	// very well: The speed of the C64 is slowed down to an average speed of
+	// 100% by the blocking write() call in EmulateLine(). If you use a buffer
+	// of, say 4096 bytes, that will happen only about every 4 frames, which
+	// means that the emulation runs much faster in some frames, and much
+	// slower in others.
+	// On really fast machines, it might make sense to use an even smaller
+	// buffer size.
+	arg = 0x00100009;
+	ioctl(devfd, SNDCTL_DSP_SETFRAGMENT, &arg);
+	arg = 0;
+	ioctl(devfd, SNDCTL_DSP_STEREO, &arg);
+	arg = 44100;
+	ioctl(devfd, SNDCTL_DSP_SPEED, &arg);
+	ioctl(devfd, SOUND_PCM_READ_RATE, &arg);
+	if (arg < 43000 || arg > 45000)
+		return;
+
+	ioctl(devfd, SNDCTL_DSP_GETBLKSIZE, &sndbufsize);
+	sound_buffer = new int16[sndbufsize];
+	ready = true;
 }
 
 
@@ -90,8 +88,8 @@ void DigitalRenderer::init_sound(void)
 
 DigitalRenderer::~DigitalRenderer()
 {
-    if (devfd >= 0)
-	close(devfd);
+	if (devfd >= 0)
+		close(devfd);
 }
 
 
@@ -119,34 +117,30 @@ void DigitalRenderer::Resume(void)
 
 void DigitalRenderer::EmulateLine(void)
 {
-    static int divisor = 0;
-    static int to_output = 0;
-    static int buffer_pos = 0;
+	static int divisor = 0;
+	static int to_output = 0;
+	static int buffer_pos = 0;
 
-    if (!ready)
-	return;
+	if (!ready)
+		return;
 
 	sample_buf[sample_in_ptr] = volume;
 	sample_in_ptr = (sample_in_ptr + 1) % SAMPLE_BUF_SIZE;
 
-    /*
-     * Now see how many samples have to be added for this line
-     */
-    divisor += SAMPLE_FREQ;
-    while (divisor >= 0)
-	divisor -= TOTAL_RASTERS*SCREEN_FREQ, to_output++;
+	// Now see how many samples have to be added for this line
+	divisor += SAMPLE_FREQ;
+	while (divisor >= 0)
+		divisor -= TOTAL_RASTERS*SCREEN_FREQ, to_output++;
 
-    /*
-     * Calculate the sound data only when we have enough to fill
-     * the buffer entirely.
-     */
-    if ((buffer_pos + to_output) >= sndbufsize) {
-	int datalen = sndbufsize - buffer_pos;
-	to_output -= datalen;
-	calc_buffer(sound_buffer + buffer_pos, datalen*2);
-	write(devfd, sound_buffer, sndbufsize*2);
-	buffer_pos = 0;
-    }    
+	// Calculate the sound data only when we have enough to fill
+	// the buffer entirely
+	if ((buffer_pos + to_output) >= sndbufsize) {
+		int datalen = sndbufsize - buffer_pos;
+		to_output -= datalen;
+		calc_buffer(sound_buffer + buffer_pos, datalen*2);
+		write(devfd, sound_buffer, sndbufsize*2);
+		buffer_pos = 0;
+	}
 }
 
 
@@ -154,7 +148,7 @@ void DigitalRenderer::EmulateLine(void)
  *  Renderer for Catweasel card
  */
 
-// Rendere class
+// Renderer class
 class CatweaselRenderer : public SIDRenderer {
 public:
 	CatweaselRenderer();

@@ -1201,14 +1201,12 @@ void DigitalRenderer::calc_buffer(int16 *buf, long count)
 	count >>= 1;	// 16 bit mono output, count is in bytes
 #endif
 	while (count--) {
-		int32 sum_output;
-		int32 sum_output_filter = 0;
-
 		// Get current master volume from sample buffer,
 		// calculate sampled voice
 		uint8 master_volume = sample_buf[(sample_count >> 16) % SAMPLE_BUF_SIZE];
 		sample_count += ((0x138 * 50) << 16) / SAMPLE_FREQ;
-		sum_output = SampleTab[master_volume] << 8;
+		int32 sum_output = SampleTab[master_volume] << 8;
+		int32 sum_output_filter = 0;
 
 		// Loop for all three voices
 		for (int j=0; j<3; j++) {
@@ -1390,15 +1388,15 @@ void MOS6581::open_close_renderer(int old_type, int new_type)
 #if defined(__BEOS__) || defined(__riscos__)
 		the_renderer = new DigitalRenderer(the_c64);
 #else
-		the_renderer = new DigitalRenderer();
+		the_renderer = new DigitalRenderer;
 #endif
 #ifdef AMIGA
 	else if (new_type == SIDTYPE_SIDCARD)
-		the_renderer = new SIDCardRenderer();
+		the_renderer = new SIDCardRenderer;
 #endif
 #ifdef __linux__
 	else if (new_type == SIDTYPE_SIDCARD)
-		the_renderer = new CatweaselRenderer();
+		the_renderer = new CatweaselRenderer;
 #endif
 	else
 		the_renderer = NULL;
