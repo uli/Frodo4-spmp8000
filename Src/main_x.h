@@ -24,7 +24,8 @@
 #include <gnome.h>
 #endif
 
-#ifdef QTOPIA
+// Qtopia Windowing System
+#ifdef QWS
 extern "C" int main(int argc, char *argv[]);
 #include <SDL.h>
 #endif
@@ -51,7 +52,13 @@ int main(int argc, char **argv)
 	gettimeofday(&tv, NULL);
 	srand(tv.tv_usec);
 
-	printf("%s by Christian Bauer\n", VERSION_STRING);
+#ifndef HAVE_GLADE
+	printf(
+		"%s Copyright (C) 1994-1997,2002-2004 Christian Bauer\n"
+		"This is free software with ABSOLUTELY NO WARRANTY.\n"
+		, VERSION_STRING
+	);
+#endif
 	if (!init_graphics())
 		return 1;
 	fflush(stdout);
