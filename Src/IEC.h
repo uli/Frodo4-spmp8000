@@ -118,6 +118,28 @@ enum {
 };
 
 
+// Information about file in disk image/archive file
+struct c64_dir_entry {
+	c64_dir_entry(const uint8 *n, int t, bool o, bool p, size_t s, off_t ofs = 0, uint8 sal = 0, uint8 sah = 0)
+		: type(t), is_open(o), is_protected(p), size(s), offset(ofs), sa_lo(sal), sa_hi(sah)
+	{
+		strncpy((char *)name, (const char *)n, 17);
+		name[16] = 0;
+	}
+
+	// Basic information
+	uint8 name[17];		// File name (C64 charset, null-terminated)
+	int type;			// File type (see defines above)
+	bool is_open;		// Flag: file open
+	bool is_protected;	// Flag: file protected
+	size_t size;		// File size (may be approximated)
+
+	// Special information
+	off_t offset;		// Offset of file in archive file
+	uint8 sa_lo, sa_hi;	// C64 start address
+};
+
+
 class Drive;
 class C64Display;
 class Prefs;
@@ -225,15 +247,15 @@ private:
 
 
 // Convert ASCII character to PETSCII character
-extern char ascii2petscii(char c);
+extern uint8 ascii2petscii(char c);
 
 // Convert ASCII string to PETSCII string
-extern void ascii2petscii(char *dest, const char *src, int max);
+extern void ascii2petscii(uint8 *dest, const char *src, int max);
 
 // Convert PETSCII character to ASCII character
 extern char petscii2ascii(uint8 c);
 
 // Convert PETSCII string to ASCII string
-extern void petscii2ascii(char *dest, const char *src, int max);
+extern void petscii2ascii(char *dest, const uint8 *src, int max);
 
 #endif

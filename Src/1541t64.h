@@ -1,5 +1,5 @@
 /*
- *  1541t64.h - 1541 emulation in .t64/LYNX file
+ *  1541t64.h - 1541 emulation in archive-type files (.t64/LYNX/.p00)
  *
  *  Frodo (C) 1994-1997,2002-2004 Christian Bauer
  *
@@ -24,20 +24,23 @@
 #include "IEC.h"
 
 
-// Information for file inside a .t64 file
-typedef struct {
-	uint8 name[17];		// File name, PETSCII
-	uint8 type;			// File type
-	uint8 sa_lo, sa_hi;	// Start address
-	int offset;			// Offset of first byte in .t64 file
-	int length;			// Length of file
-} FileInfo;
+/*
+ *  Definitions
+ */
 
+// Archive types
+enum {
+	TYPE_T64,			// C64S tape file
+	TYPE_LYNX,			// C64 LYNX archive
+	TYPE_P00			// .p00 file
+};
 
-class T64Drive : public Drive {
+// Archive file drive class
+class ArchDrive : public Drive {
 public:
-	T64Drive(IEC *iec, char *filepath);
-	virtual ~T64Drive();
+	ArchDrive(IEC *iec, const char *filepath);
+	virtual ~ArchDrive();
+
 	virtual uint8 Open(int channel, const uint8 *name, int name_len);
 	virtual uint8 Close(int channel);
 	virtual uint8 Read(int channel, uint8 &byte);
@@ -45,9 +48,7 @@ public:
 	virtual void Reset(void);
 
 private:
-	void open_close_t64_file(char *t64name);
-	bool parse_t64_file(void);
-	bool parse_lynx_file(void);
+	bool change_arch(const char *path);
 
 	uint8 open_file(int channel, const uint8 *name, int name_len);
 	uint8 open_directory(int channel, const uint8 *pattern, int pattern_len);
@@ -58,17 +59,26 @@ private:
 	virtual void initialize_cmd(void);
 	virtual void validate_cmd(void);
 
-	FILE *the_file;			// File pointer for .t64 file
-	bool is_lynx;			// Flag: .t64 file is really a LYNX archive
+	FILE *the_file;			// File pointer for archive file
+	int archive_type;		// File/archive type (see defines above)
+	vector<c64_dir_entry> file_info;	// Vector of file information structs for all files in the archive
 
-	char orig_t64_name[256]; // Original path of .t64 file
 	char dir_title[16];		// Directory title
 	FILE *file[16];			// File pointers for each of the 16 channels (all temporary files)
 
-	int num_files;			// Number of files in .t64 file and in file_info array
-	FileInfo *file_info;	// Pointer to array of file information structs for each file
-
 	uint8 read_char[16];	// Buffers for one-byte read-ahead
 };
+
+
+/*
+ *  Functions
+ */
+
+// Check whether file with given header (64 bytes) and size looks like one
+// of the file types supported by this module
+extern bool IsArchFile(const char *path, const uint8 *header, long size);
+
+// Read directory of archive file into (empty) c64_dir_entry vector
+extern bool ReadArchDirectory(const char *path, vector<c64_dir_entry> &vec);
 
 #endif

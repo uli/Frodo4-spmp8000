@@ -325,7 +325,7 @@ uint8 FSDrive::open_directory(int channel, const uint8 *pattern, int pattern_len
 
 	// Convert pattern to ASCII
 	char ascii_pattern[NAMEBUF_LENGTH];
-	petscii2ascii(ascii_pattern, (const char *)pattern, NAMEBUF_LENGTH);
+	petscii2ascii(ascii_pattern, pattern, NAMEBUF_LENGTH);
 
 	// Open directory for reading and skip '.' and '..'
 	if ((dir = opendir(dir_path)) == NULL) {

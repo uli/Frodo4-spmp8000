@@ -1,7 +1,7 @@
 /*
- *  1541t64.cpp - 1541 emulation in .t64/LYNX file
+ *  1541t64.cpp - 1541 emulation in archive-type files (.t64/LYNX/.p00)
  *
- *  Frodo (C) 1994-1997,2002-2004 Christian Bauer
+ *  Frodo (C) Copyright 1994-2001 Christian Bauer
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -19,21 +19,20 @@
  */
 
 /*
- * Notes:
- * ------
+ *  NOTES:
+ *   - This module handles access to files inside (uncompressed) archives
+ *     and makes the archive look like a disk. It supports C64S tape images
+ *     (.t64), C64 LYNX archives and .p00 files.
+ *   - If any file is opened, the contents of the file in the archive file are
+ *     copied into a temporary file which is used for reading. This is done
+ *     to insert the load address.
  *
- *  - If any file is opened, the contents of the file in the
- *    .t64 file are copied into a temporary file which is used
- *    for reading. This is done to insert the load address.
- *  - C64 LYNX archives are also handled by these routines
- *
- * Incompatibilities:
- * ------------------
- *
- *  - Only read accesses possible
- *  - No "raw" directory reading
- *  - No relative/sequential/user files
- *  - Only "I" and "UJ" commands implemented
+ *  Incompatibilities:
+ *   - Only read accesses possible
+ *   - No "raw" directory reading
+ *   - No relative/sequential/user files
+ *   - Unimplemented commands: B-P, M-R, M-W, C, S, P, N
+ *   - Impossible to implement: B-R, B-W, B-E, B-A, B-F, M-E
  */
 
 #include "sysdeps.h"
@@ -42,27 +41,32 @@
 #include "IEC.h"
 #include "Prefs.h"
 
+#define DEBUG 0
+#include "debug.h"
+
+
+// Prototypes
+static bool is_t64_header(const uint8 *header);
+static bool is_lynx_header(const uint8 *header);
+static bool is_p00_header(const uint8 *header);
+static bool parse_t64_file(FILE *f, vector<c64_dir_entry> &vec, char *dir_title);
+static bool parse_lynx_file(FILE *f, vector<c64_dir_entry> &vec, char *dir_title);
+static bool parse_p00_file(FILE *f, vector<c64_dir_entry> &vec, char *dir_title);
+
 
 /*
  *  Constructor: Prepare emulation
  */
 
-T64Drive::T64Drive(IEC *iec, char *filepath) : Drive(iec)
+ArchDrive::ArchDrive(IEC *iec, const char *filepath) : Drive(iec), the_file(NULL)
 {
-	the_file = NULL;
-	file_info = NULL;
-
-	Ready = false;
-	strcpy(orig_t64_name, filepath);
 	for (int i=0; i<16; i++)
 		file[i] = NULL;
+	Reset();
 
-	// Open .t64 file
-	open_close_t64_file(filepath);
-	if (the_file != NULL) {
-		Reset();
+	// Open archive file
+	if (change_arch(filepath))
 		Ready = true;
-	}
 }
 
 
@@ -70,175 +74,65 @@ T64Drive::T64Drive(IEC *iec, char *filepath) : Drive(iec)
  *  Destructor
  */
 
-T64Drive::~T64Drive()
+ArchDrive::~ArchDrive()
 {
-	// Close .t64 file
-	open_close_t64_file("");
-
+	// Close archive file
+	if (the_file) {
+		close_all_channels();
+		fclose(the_file);
+	}
 	Ready = false;
 }
 
 
 /*
- *  Open/close the .t64/LYNX file
+ *  Open the archive file
  */
 
-void T64Drive::open_close_t64_file(char *t64name)
+bool ArchDrive::change_arch(const char *path)
 {
-	uint8 buf[64];
-	bool parsed_ok = false;
+	FILE *new_file;
 
-	// Close old .t64, if open
-	if (the_file != NULL) {
-		close_all_channels();
-		fclose(the_file);
-		the_file = NULL;
-		delete[] file_info;
-		file_info = NULL;
-	}
+	// Open new archive file
+	if ((new_file = fopen(path, "rb")) != NULL) {
 
-	// Open new .t64 file
-	if (t64name[0]) {
-		if ((the_file = fopen(t64name, "rb")) != NULL) {
+		file_info.clear();
 
-			// Check file ID
-			fread(&buf, 64, 1, the_file);
-			if (buf[0] == 0x43 && buf[1] == 0x36 && buf[2] == 0x34) {
-				is_lynx = false;
-				parsed_ok = parse_t64_file();
-			} else if (buf[0x3c] == 0x4c && buf[0x3d] == 0x59 && buf[0x3e] == 0x4e && buf[0x3f] == 0x58) {
-				is_lynx = true;
-				parsed_ok = parse_lynx_file();
-			}
+		// Read header, determine archive type and parse archive contents
+		uint8 header[64];
+		fread(header, 1, 64, new_file);
+		bool parsed_ok = false;
+		if (is_t64_header(header)) {
+			archive_type = TYPE_T64;
+			parsed_ok = parse_t64_file(new_file, file_info, dir_title);
+		} else if (is_lynx_header(header)) {
+			archive_type = TYPE_LYNX;
+			parsed_ok = parse_lynx_file(new_file, file_info, dir_title);
+		} else if (is_p00_header(header)) {
+			archive_type = TYPE_P00;
+			parsed_ok = parse_p00_file(new_file, file_info, dir_title);
+		}
 
-			if (!parsed_ok) {
+		if (!parsed_ok) {
+			fclose(new_file);
+			if (the_file) {
+				close_all_channels();
 				fclose(the_file);
 				the_file = NULL;
-				delete[] file_info;
-				file_info = NULL;
-				return;
 			}
-		}
-	}
-}
-
-
-/*
- *  Parse .t64 file and construct FileInfo array
- */
-
-bool T64Drive::parse_t64_file(void)
-{
-	uint8 buf[32];
-	uint8 *buf2;
-	uint8 *p;
-	int max, i, j;
-
-	// Read header and get maximum number of files contained
-	fseek(the_file, 32, SEEK_SET);
-	fread(&buf, 32, 1, the_file);
-	max = (buf[3] << 8) | buf[2];
-
-	memcpy(dir_title, buf+8, 16);
-
-	// Allocate buffer for file records and read them
-	buf2 = new uint8[max*32];
-	fread(buf2, 32, max, the_file);
-
-	// Determine number of files contained
-	for (i=0, num_files=0; i<max; i++)
-		if (buf2[i*32] == 1)
-			num_files++;
-
-	if (!num_files)
-		return false;
-
-	// Construct file information array
-	file_info = new FileInfo[num_files];
-	for (i=0, j=0; i<max; i++)
-		if (buf2[i*32] == 1) {
-			memcpy(file_info[j].name, buf2+i*32+16, 16);
-
-			// Strip trailing spaces
-			file_info[j].name[16] = 0x20;
-			p = file_info[j].name + 16;
-			while (*p-- == 0x20) ;
-			p[2] = 0;
-
-			file_info[j].type = FTYPE_PRG;
-			file_info[j].sa_lo = buf2[i*32+2];
-			file_info[j].sa_hi = buf2[i*32+3];
-			file_info[j].offset = (buf2[i*32+11] << 24) | (buf2[i*32+10] << 16) | (buf2[i*32+9] << 8) | buf2[i*32+8];
-			file_info[j].length = ((buf2[i*32+5] << 8) | buf2[i*32+4]) - ((buf2[i*32+3] << 8) | buf2[i*32+2]);
-			j++;
-		}
-
-	delete[] buf2;
-	return true;
-}
-
-
-/*
- *  Parse LYNX file and construct FileInfo array
- */
-
-bool T64Drive::parse_lynx_file(void)
-{
-	uint8 *p;
-	int dir_blocks, cur_offset, num_blocks, last_block, i;
-	char type_char;
-
-	// Dummy directory title
-	strcpy(dir_title, "LYNX ARCHIVE    ");
-
-	// Read header and get number of directory blocks and files contained
-	fseek(the_file, 0x60, SEEK_SET);
-	fscanf(the_file, "%d", &dir_blocks);
-	while (fgetc(the_file) != 0x0d)
-		if (feof(the_file))
 			return false;
-	fscanf(the_file, "%d\015", &num_files);
-
-	// Construct file information array
-	file_info = new FileInfo[num_files];
-	cur_offset = dir_blocks * 254;
-	for (i=0; i<num_files; i++) {
-
-		// Read file name
-		fread(file_info[i].name, 16, 1, the_file);
-
-		// Strip trailing shift-spaces
-		file_info[i].name[16] = 0xa0;
-		p = (uint8 *)file_info[i].name + 16;
-		while (*p-- == 0xa0) ;
-		p[2] = 0;
-
-		// Read file length and type
-		fscanf(the_file, "\015%d\015%c\015%d\015", &num_blocks, &type_char, &last_block);
-
-		switch (type_char) {
-			case 'S':
-				file_info[i].type = FTYPE_SEQ;
-				break;
-			case 'U':
-				file_info[i].type = FTYPE_USR;
-				break;
-			case 'R':
-				file_info[i].type = FTYPE_REL;
-				break;
-			default:
-				file_info[i].type = FTYPE_PRG;
-				break;
 		}
-		file_info[i].sa_lo = 0;	// Only used for .t64 files
-		file_info[i].sa_hi = 0;
-		file_info[i].offset = cur_offset;
-		file_info[i].length = (num_blocks-1) * 254 + last_block;
 
-		cur_offset += num_blocks * 254;
+		// Close old archive if open, and set new file
+		if (the_file) {
+			close_all_channels();
+			fclose(the_file);
+			the_file = NULL;
+		}
+		the_file = new_file;
+		return true;
 	}
-
-	return true;
+	return false;
 }
 
 
@@ -246,8 +140,10 @@ bool T64Drive::parse_lynx_file(void)
  *  Open channel
  */
 
-uint8 T64Drive::Open(int channel, const uint8 *name, int name_len)
+uint8 ArchDrive::Open(int channel, const uint8 *name, int name_len)
 {
+	D(bug("ArchDrive::Open channel %d, file %s\n", channel, name));
+
 	set_error(ERR_OK);
 
 	// Channel 15: Execute file name as command
@@ -283,13 +179,13 @@ uint8 T64Drive::Open(int channel, const uint8 *name, int name_len)
  *  Open file
  */
 
-uint8 T64Drive::open_file(int channel, const uint8 *name, int name_len)
+uint8 ArchDrive::open_file(int channel, const uint8 *name, int name_len)
 {
 	uint8 plain_name[NAMEBUF_LENGTH];
 	int plain_name_len;
 	int mode = FMODE_READ;
-	int type = FTYPE_PRG;
-	int rec_len;
+	int type = FTYPE_DEL;
+	int rec_len = 0;
 	parse_file_name(name, name_len, plain_name, plain_name_len, mode, type, rec_len);
 
 	// Channel 0 is READ, channel 1 is WRITE
@@ -327,21 +223,21 @@ uint8 T64Drive::open_file(int channel, const uint8 *name, int name_len)
 		if ((file[channel] = tmpfile()) != NULL) {
 
 			// Write load address (.t64 only)
-			if (!is_lynx) {
+			if (archive_type == TYPE_T64) {
 				fwrite(&file_info[num].sa_lo, 1, 1, file[channel]);
 				fwrite(&file_info[num].sa_hi, 1, 1, file[channel]);
 			}
 
-			// Copy file contents from .t64 file to temp file
-			uint8 *buf = new uint8[file_info[num].length];
+			// Copy file contents from archive file to temp file
+			uint8 *buf = new uint8[file_info[num].size];
 			fseek(the_file, file_info[num].offset, SEEK_SET);
-			fread(buf, file_info[num].length, 1, the_file);
-			fwrite(buf, file_info[num].length, 1, file[channel]);
+			fread(buf, file_info[num].size, 1, the_file);
+			fwrite(buf, file_info[num].size, 1, file[channel]);
 			rewind(file[channel]);
 			delete[] buf;
 
 			if (mode == FMODE_READ)	// Read and buffer first byte
-				read_char[channel] = fgetc(file[channel]);
+				read_char[channel] = getc(file[channel]);
 		}
 	} else
 		set_error(ERR_FILENOTFOUND);
@@ -368,13 +264,12 @@ static bool match(const uint8 *p, int p_len, const uint8 *n)
 	return *n == 0;
 }
 
-bool T64Drive::find_first_file(const uint8 *pattern, int pattern_len, int &num)
+bool ArchDrive::find_first_file(const uint8 *pattern, int pattern_len, int &num)
 {
-	for (int i=0; i<num_files; i++) {
-		if (match(pattern, pattern_len, file_info[i].name)) {
-			num = i;
+	vector<c64_dir_entry>::const_iterator i, end = file_info.end();
+	for (i = file_info.begin(), num = 0; i != end; i++, num++) {
+		if (match(pattern, pattern_len, (uint8 *)i->name))
 			return true;
-		}
 	}
 	return false;
 }
@@ -384,7 +279,7 @@ bool T64Drive::find_first_file(const uint8 *pattern, int pattern_len, int &num)
  *  Open directory, create temporary file
  */
 
-uint8 T64Drive::open_directory(int channel, const uint8 *pattern, int pattern_len)
+uint8 ArchDrive::open_directory(int channel, const uint8 *pattern, int pattern_len)
 {
 	// Special treatment for "$0"
 	if (pattern[0] == '0' && pattern_len == 1) {
@@ -411,21 +306,22 @@ uint8 T64Drive::open_directory(int channel, const uint8 *pattern, int pattern_le
 	fwrite(buf, 1, 32, file[channel]);
 
 	// Create and write one line for every directory entry
-	for (int num=0; num<num_files; num++) {
+	vector<c64_dir_entry>::const_iterator i, end = file_info.end();
+	for (i = file_info.begin(); i != end; i++) {
 
 		// Include only files matching the pattern
-		if (pattern_len == 0 || match(pattern, pattern_len, file_info[num].name)) {
+		if (pattern_len == 0 || match(pattern, pattern_len, (uint8 *)i->name)) {
 
 			// Clear line with spaces and terminate with null byte
 			memset(buf, ' ', 31);
 			buf[31] = 0;
 
-			uint8 *p = buf;
+			uint8 *p = (uint8 *)buf;
 			*p++ = 0x01;	// Dummy line link
 			*p++ = 0x01;
 
 			// Calculate size in blocks (254 bytes each)
-			int n = (file_info[num].length + 254) / 254;
+			int n = (i->size + 254) / 254;
 			*p++ = n & 0xff;
 			*p++ = (n >> 8) & 0xff;
 
@@ -434,26 +330,29 @@ uint8 T64Drive::open_directory(int channel, const uint8 *pattern, int pattern_le
 			if (n < 100) p++;	// Less than 100: add another space
 
 			// Convert and insert file name
-			uint8 str[NAMEBUF_LENGTH];
-			memcpy(str, file_info[num].name, 17);
 			*p++ = '\"';
 			uint8 *q = p;
-			for (int i=0; i<16 && str[i]; i++)
-				*q++ = str[i];
+			for (int j=0; j<16 && i->name[j]; j++)
+				*q++ = i->name[j];
 			*q++ = '\"';
 			p += 18;
 
 			// File type
-			switch (file_info[num].type) {
-				case FTYPE_PRG:
-					*p++ = 'P';
-					*p++ = 'R';
-					*p++ = 'G';
+			switch (i->type) {
+				case FTYPE_DEL:
+					*p++ = 'D';
+					*p++ = 'E';
+					*p++ = 'L';
 					break;
 				case FTYPE_SEQ:
 					*p++ = 'S';
 					*p++ = 'E';
 					*p++ = 'Q';
+					break;
+				case FTYPE_PRG:
+					*p++ = 'P';
+					*p++ = 'R';
+					*p++ = 'G';
 					break;
 				case FTYPE_USR:
 					*p++ = 'U';
@@ -482,7 +381,7 @@ uint8 T64Drive::open_directory(int channel, const uint8 *pattern, int pattern_le
 
 	// Rewind file for reading and read first byte
 	rewind(file[channel]);
-	read_char[channel] = fgetc(file[channel]);
+	read_char[channel] = getc(file[channel]);
 
 	return ST_OK;
 }
@@ -492,8 +391,10 @@ uint8 T64Drive::open_directory(int channel, const uint8 *pattern, int pattern_le
  *  Close channel
  */
 
-uint8 T64Drive::Close(int channel)
+uint8 ArchDrive::Close(int channel)
 {
+	D(bug("ArchDrive::Close channel %d\n", channel));
+
 	if (channel == 15) {
 		close_all_channels();
 		return ST_OK;
@@ -512,7 +413,7 @@ uint8 T64Drive::Close(int channel)
  *  Close all channels
  */
 
-void T64Drive::close_all_channels(void)
+void ArchDrive::close_all_channels(void)
 {
 	for (int i=0; i<15; i++)
 		Close(i);
@@ -525,15 +426,15 @@ void T64Drive::close_all_channels(void)
  *  Read from channel
  */
 
-uint8 T64Drive::Read(int channel, uint8 &byte)
+uint8 ArchDrive::Read(int channel, uint8 &byte)
 {
-	int c;
+	D(bug("ArchDrive::Read channel %d\n", channel));
 
 	// Channel 15: Error channel
 	if (channel == 15) {
 		byte = *error_ptr++;
 
-		if (byte != '\r')
+		if (byte != '\x0d')
 			return ST_OK;
 		else {	// End of message
 			set_error(ERR_OK);
@@ -545,7 +446,7 @@ uint8 T64Drive::Read(int channel, uint8 &byte)
 
 	// Get char from buffer and read next
 	byte = read_char[channel];
-	c = fgetc(file[channel]);
+	int c = getc(file[channel]);
 	if (c == EOF)
 		return ST_EOF;
 	else {
@@ -559,12 +460,16 @@ uint8 T64Drive::Read(int channel, uint8 &byte)
  *  Write to channel
  */
 
-uint8 T64Drive::Write(int channel, uint8 byte, bool eoi)
+uint8 ArchDrive::Write(int channel, uint8 byte, bool eoi)
 {
+	D(bug("ArchDrive::Write channel %d, byte %02x, eoi %d\n", channel, byte, eoi));
+
 	// Channel 15: Collect chars and execute command on EOI
 	if (channel == 15) {
-		if (cmd_len >= 58)
+		if (cmd_len > 58) {
+			set_error(ERR_SYNTAX32);
 			return ST_TIMEOUT;
+		}
 		
 		cmd_buf[cmd_len++] = byte;
 
@@ -591,7 +496,7 @@ uint8 T64Drive::Write(int channel, uint8 byte, bool eoi)
 // RENAME:new=old
 //        ^   ^
 // new_file   old_file
-void T64Drive::rename_cmd(const uint8 *new_file, int new_file_len, const uint8 *old_file, int old_file_len)
+void ArchDrive::rename_cmd(const uint8 *new_file, int new_file_len, const uint8 *old_file, int old_file_len)
 {
 	// Check if destination file is already present
 	int num;
@@ -610,13 +515,13 @@ void T64Drive::rename_cmd(const uint8 *new_file, int new_file_len, const uint8 *
 }
 
 // INITIALIZE
-void T64Drive::initialize_cmd(void)
+void ArchDrive::initialize_cmd(void)
 {
 	close_all_channels();
 }
 
 // VALIDATE
-void T64Drive::validate_cmd(void)
+void ArchDrive::validate_cmd(void)
 {
 }
 
@@ -625,9 +530,215 @@ void T64Drive::validate_cmd(void)
  *  Reset drive
  */
 
-void T64Drive::Reset(void)
+void ArchDrive::Reset(void)
 {
 	close_all_channels();
 	cmd_len = 0;	
 	set_error(ERR_STARTUP);
+}
+
+
+/*
+ *  Check whether file with given header (64 bytes) and size looks like one
+ *  of the file types supported by this module
+ */
+
+static bool is_t64_header(const uint8 *header)
+{
+	return memcmp(header, "C64S tape file", 14) == 0;
+}
+
+static bool is_lynx_header(const uint8 *header)
+{
+	return memcmp(header + 0x38, "USE LYNX", 8) == 0;
+}
+
+static bool is_p00_header(const uint8 *header)
+{
+	return memcmp(header, "C64File", 7) == 0;
+}
+
+bool IsArchFile(const char *path, const uint8 *header, long size)
+{
+	return is_t64_header(header) || is_lynx_header(header) || is_p00_header(header);
+}
+
+
+/*
+ *  Read directory of archive file into (empty) c64_dir_entry vector,
+ *  returns false on error
+ */
+
+static bool parse_t64_file(FILE *f, vector<c64_dir_entry> &vec, char *dir_title)
+{
+	// Read header and get maximum number of files contained
+	fseek(f, 32, SEEK_SET);
+	uint8 buf[32];
+	fread(&buf, 32, 1, f);
+	int max = (buf[3] << 8) | buf[2];
+	if (max == 0)
+		max = 1;
+
+	memcpy(dir_title, buf+8, 16);
+
+	// Allocate buffer for file records and read them
+	uint8 *buf2 = new uint8[max * 32];
+	fread(buf2, 32, max, f);
+
+	// Determine number of files contained
+	int num_files = 0;
+	for (int i=0; i<max; i++)
+		if (buf2[i*32] == 1)
+			num_files++;
+
+	if (!num_files) {
+		delete[] buf2;
+		return false;
+	}
+
+	// Construct file information array
+	vec.reserve(num_files);
+	uint8 *b = buf2;
+	for (int i=0; i<max; i++, b+=32) {
+		if (b[0] == 1) {
+
+			// Convert file name (strip trailing spaces)
+			uint8 name_buf[17];
+			memcpy(name_buf, b + 16, 16);
+			name_buf[16] = 0x20;
+			uint8 *p = name_buf + 16;
+			while (*p-- == 0x20) ;
+			p[2] = 0;
+
+			// Find file size and offset
+			size_t size = ((b[5] << 8) | b[4]) - ((b[3] << 8) | b[2]);
+			off_t offset = (b[11] << 24) | (b[10] << 16) | (b[9] << 8) | b[8];
+
+			// Add entry
+			vec.push_back(c64_dir_entry(name_buf, FTYPE_PRG, false, false, size, offset, b[2], b[3]));
+		}
+	}
+
+	delete[] buf2;
+	return true;
+}
+
+static bool parse_lynx_file(FILE *f, vector<c64_dir_entry> &vec, char *dir_title)
+{
+	// Dummy directory title
+	strcpy(dir_title, "LYNX ARCHIVE    ");
+
+	// Read header and get number of directory blocks and files contained
+	fseek(f, 0x60, SEEK_SET);
+	int dir_blocks;
+	fscanf(f, "%d", &dir_blocks);
+	while (getc(f) != 0x0d)
+		if (feof(f))
+			return false;
+	int num_files;
+	fscanf(f, "%d\x0d", &num_files);
+
+	// Construct file information array
+	vec.reserve(num_files);
+	int cur_offset = dir_blocks * 254;
+	for (int i=0; i<num_files; i++) {
+
+		// Read and convert file name (strip trailing shift-spaces)
+		uint8 name_buf[17];
+		fread(name_buf, 16, 1, f);
+		name_buf[16] = 0xa0;
+		uint8 *p = name_buf + 16;
+		while (*p-- == 0xa0) ;
+		p[2] = 0;
+
+		// Read file length and type
+		int num_blocks, last_block;
+		char type_char;
+		fscanf(f, "\x0d%d\x0d%c\x0d%d\x0d", &num_blocks, &type_char, &last_block);
+		size_t size = (num_blocks - 1) * 254 + last_block - 1;
+
+		int type;
+		switch (type_char) {
+			case 'S':
+				type = FTYPE_SEQ;
+				break;
+			case 'U':
+				type = FTYPE_USR;
+				break;
+			case 'R':
+				type = FTYPE_REL;
+				break;
+			default:
+				type = FTYPE_PRG;
+				break;
+		}
+
+		// Read start address
+		long here = ftell(f);
+		uint8 sa_lo, sa_hi;
+		fseek(f, cur_offset, SEEK_SET);
+		fread(&sa_lo, 1, 1, f);
+		fread(&sa_hi, 1, 1, f);
+		fseek(f, here, SEEK_SET);
+
+		// Add entry
+		vec.push_back(c64_dir_entry(name_buf, type, false, false, size, cur_offset, sa_lo, sa_hi));
+
+		cur_offset += num_blocks * 254;
+	}
+
+	return true;
+}
+
+static bool parse_p00_file(FILE *f, vector<c64_dir_entry> &vec, char *dir_title)
+{
+	// Dummy directory title
+	strcpy(dir_title, ".P00 FILE       ");
+
+	// Contains only one file
+	vec.reserve(1);
+
+	// Read file name and start address
+	uint8 name_buf[17];
+	fseek(f, 8, SEEK_SET);
+	fread(name_buf, 17, 1, f);
+	name_buf[16] = 0;
+	uint8 sa_lo, sa_hi;
+	fseek(f, 26, SEEK_SET);
+	fread(&sa_lo, 1, 1, f);
+	fread(&sa_hi, 1, 1, f);
+
+	// Get file size
+	fseek(f, 0, SEEK_END);
+	size_t size = ftell(f) - 26;
+
+	// Add entry
+	vec.push_back(c64_dir_entry(name_buf, FTYPE_PRG, false, false, size, 26, sa_lo, sa_hi));
+	return true;
+}
+
+bool ReadArchDirectory(const char *path, vector<c64_dir_entry> &vec)
+{
+	// Open file
+	FILE *f = fopen(path, "rb");
+	if (f) {
+
+		// Read header
+		uint8 header[64];
+		fread(header, 1, sizeof(header), f);
+
+		// Determine archive type and parse archive
+		bool result = false;
+		char dir_title[16];
+		if (is_t64_header(header))
+			result = parse_t64_file(f, vec, dir_title);
+		else if (is_lynx_header(header))
+			result = parse_lynx_file(f, vec, dir_title);
+		else if (is_p00_header(header))
+			result = parse_p00_file(f, vec, dir_title);
+
+		fclose(f);
+		return result;
+	} else
+		return false;
 }

@@ -70,7 +70,7 @@ IEC::IEC(C64Display *display) : the_display(display)
 			else if (ThePrefs.DriveType[i] == DRVTYPE_D64)
 				drive[i] = new ImageDrive(this, ThePrefs.DrivePath[i]);
 			else
-				drive[i] = new T64Drive(this, ThePrefs.DrivePath[i]);
+				drive[i] = new ArchDrive(this, ThePrefs.DrivePath[i]);
 		}
 
 	listener_active = talker_active = false;
@@ -122,7 +122,7 @@ void IEC::NewPrefs(Prefs *prefs)
 				else if (prefs->DriveType[i] == DRVTYPE_D64)
 					drive[i] = new ImageDrive(this, prefs->DrivePath[i]);
 				else
-					drive[i] = new T64Drive(this, prefs->DrivePath[i]);
+					drive[i] = new ArchDrive(this, prefs->DrivePath[i]);
 			}
 		}
 
@@ -848,14 +848,14 @@ void Drive::unsupp_cmd(void)
  *  Convert PETSCII<->ASCII
  */
 
-char ascii2petscii(char c)
+uint8 ascii2petscii(char c)
 {
 	if ((c >= 'A') && (c <= 'Z') || (c >= 'a') && (c <= 'z'))
 		return c ^ 0x20;
 	return c;
 }
 
-void ascii2petscii(char *dest, const char *src, int n)
+void ascii2petscii(uint8 *dest, const char *src, int n)
 {
 	while (n-- && (*dest++ = ascii2petscii(*src++))) ;
 }
@@ -869,7 +869,7 @@ char petscii2ascii(uint8 c)
 	return c;
 }
 
-void petscii2ascii(char *dest, const char *src, int n)
+void petscii2ascii(char *dest, const uint8 *src, int n)
 {
 	while (n-- && (*dest++ = petscii2ascii(*src++))) ;
 }
