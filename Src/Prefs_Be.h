@@ -34,8 +34,8 @@ const uint32 MSG_OK = 'okok';
 const uint32 MSG_CANCEL = 'cncl';
 const uint32 MSG_SPRITES_ON = 'spon';
 const uint32 MSG_SPRITE_COLLISIONS = 'scol';
-const uint32 MSG_JOYSTICK_1_ON = 'joy1';
-const uint32 MSG_JOYSTICK_2_ON = 'joy2';
+const uint32 MSG_JOYSTICK_1_PORT = 'joy1';
+const uint32 MSG_JOYSTICK_2_PORT = 'joy2';
 const uint32 MSG_JOYSTICK_SWAP = 'jswp';
 const uint32 MSG_LIMIT_SPEED = 'lmit';
 const uint32 MSG_FAST_RESET = 'frst';
@@ -87,6 +87,7 @@ private:
 	BPopUpMenu *make_sidtype_popup(BRect frame, char *label_text, uint32 what, BView *parent);
 	BPopUpMenu *make_reusize_popup(BRect frame, char *label_text, uint32 what, BView *parent);
 	BPopUpMenu *make_disptype_popup(BRect frame, char *label_text, uint32 what, BView *parent);
+	BPopUpMenu *make_joystick_popup(BRect frame, char *label_text, uint32 what, BView *parent);
 	void set_values(void);
 	void get_values(void);
 	void ghost_controls(void);
@@ -107,15 +108,15 @@ private:
 	NumberControl *g_cia_cycles;
 	NumberControl *g_floppy_cycles;
 	NumberControl *g_skip_frames;
-	BPopUpMenu *g_drive_type[4];
 	PathControl *g_drive_path[4];
+	BPopUpMenu *g_drive_type[4];
 	BPopUpMenu *g_sid_type;
 	BPopUpMenu *g_reu_size;
 	BPopUpMenu *g_display_type;
+	BPopUpMenu *g_joystick_1_port;
+	BPopUpMenu *g_joystick_2_port;
 	BCheckBox *g_sprites_on;
 	BCheckBox *g_sprite_collisions;
-	BCheckBox *g_joystick_1_on;
-	BCheckBox *g_joystick_2_on;
 	BCheckBox *g_joystick_swap;
 	BCheckBox *g_limit_speed;
 	BCheckBox *g_fast_reset;
@@ -259,7 +260,7 @@ PrefsWindow::PrefsWindow(Prefs *p, bool start, char *path) : BWindow(BRect(0, 0,
 	bar->AddItem(menu);
 	AddChild(bar);
 	SetKeyMenuBar(bar);
-	int mbar_height = bar->Frame().bottom + 1;
+	int mbar_height = int(bar->Frame().bottom) + 1;
 
 	// Resize window to fit menu bar
 	ResizeBy(0, mbar_height);
@@ -271,28 +272,28 @@ PrefsWindow::PrefsWindow(Prefs *p, bool start, char *path) : BWindow(BRect(0, 0,
 	top->SetViewColor(fill_color);
 
 	// Checkboxes
-	g_sprites_on = make_checkbox(BRect(10, 10, 160, 21), "Sprite display", MSG_SPRITES_ON, top);
-	g_sprite_collisions = make_checkbox(BRect(10, 25, 160, 36), "Sprite collisions", MSG_SPRITE_COLLISIONS, top);
-	g_joystick_1_on = make_checkbox(BRect(10, 40, 160, 51), "Joystick on port 1", MSG_JOYSTICK_1_ON, top);
-	g_joystick_2_on = make_checkbox(BRect(10, 55, 160, 66), "Joystick on port 2", MSG_JOYSTICK_2_ON, top);
-	g_joystick_swap = make_checkbox(BRect(10, 70, 160, 81), "Swap joysticks", MSG_JOYSTICK_SWAP, top);
-	g_limit_speed = make_checkbox(BRect(10, 85, 160, 96), "Limit speed", MSG_LIMIT_SPEED, top);
-	g_fast_reset = make_checkbox(BRect(10, 100, 160, 111), "Fast reset", MSG_FAST_RESET, top);
-	g_cia_irq_hack = make_checkbox(BRect(10, 115, 160, 126), "Clear CIA ICR on write", MSG_CIA_IRQ_HACK, top);
-	g_sid_filters = make_checkbox(BRect(10, 130, 160, 141), "SID filters", MSG_SID_FILTERS, top);
-	g_double_scan = make_checkbox(BRect(10, 145, 160, 156), "Doublescan lines", MSG_DOUBLE_SCAN, top);
+	g_sprites_on = make_checkbox(BRect(10, 10, 180, 21), "Sprite display", MSG_SPRITES_ON, top);
+	g_sprite_collisions = make_checkbox(BRect(10, 25, 180, 36), "Sprite collisions", MSG_SPRITE_COLLISIONS, top);
+	g_limit_speed = make_checkbox(BRect(10, 40, 180, 51), "Limit speed", MSG_LIMIT_SPEED, top);
+	g_fast_reset = make_checkbox(BRect(10, 55, 180, 66), "Fast reset", MSG_FAST_RESET, top);
+	g_cia_irq_hack = make_checkbox(BRect(10, 70, 180, 81), "Clear CIA ICR on write", MSG_CIA_IRQ_HACK, top);
+	g_sid_filters = make_checkbox(BRect(10, 85, 180, 96), "SID filters", MSG_SID_FILTERS, top);
+	g_double_scan = make_checkbox(BRect(10, 100, 180, 111), "Doublescan lines", MSG_DOUBLE_SCAN, top);
+	g_joystick_swap = make_checkbox(BRect(10, 115, 180, 126), "Swap joysticks", MSG_JOYSTICK_SWAP, top);
+	g_joystick_1_port = make_joystick_popup(BRect(10, 130, 180, 145), "Joystick 1", MSG_JOYSTICK_1_PORT, top);
+	g_joystick_2_port = make_joystick_popup(BRect(10, 150, 180, 165), "Joystick 2", MSG_JOYSTICK_2_PORT, top);
 
 	// Number entry fields
-	g_normal_cycles = make_number_entry(BRect(160, 10, 390, 26), "Cycles per line (CPU)", top);
-	g_bad_line_cycles = make_number_entry(BRect(160, 30, 390, 46), "Cycles per Bad Line (CPU)", top);
-	g_cia_cycles = make_number_entry(BRect(160, 50, 390, 66), "Cycles per line (CIA)", top);
-	g_floppy_cycles = make_number_entry(BRect(160, 70, 390, 86), "Cycles per line (1541)", top);
-	g_skip_frames = make_number_entry(BRect(160, 90, 390, 106), "Draw every n-th frame", top);
+	g_normal_cycles = make_number_entry(BRect(180, 10, 390, 26), "Cycles per line (CPU)", top);
+	g_bad_line_cycles = make_number_entry(BRect(180, 30, 390, 46), "Cycles per Bad Line (CPU)", top);
+	g_cia_cycles = make_number_entry(BRect(180, 50, 390, 66), "Cycles per line (CIA)", top);
+	g_floppy_cycles = make_number_entry(BRect(180, 70, 390, 86), "Cycles per line (1541)", top);
+	g_skip_frames = make_number_entry(BRect(180, 90, 390, 106), "Draw every n-th frame", top);
 
 	// Popup fields
-	g_display_type = make_disptype_popup(BRect(160, 110, 390, 126), "Display type", MSG_DISPLAY_TYPE, top);
-	g_sid_type = make_sidtype_popup(BRect(160, 130, 390, 146), "SID emulation type", MSG_SID_TYPE, top);
-	g_reu_size = make_reusize_popup(BRect(160, 150, 390, 166), "REU size", MSG_REU_SIZE, top);
+	g_display_type = make_disptype_popup(BRect(180, 110, 390, 126), "Display type", MSG_DISPLAY_TYPE, top);
+	g_sid_type = make_sidtype_popup(BRect(180, 130, 390, 146), "SID emulation type", MSG_SID_TYPE, top);
+	g_reu_size = make_reusize_popup(BRect(180, 150, 390, 166), "REU size", MSG_REU_SIZE, top);
 
 	// Prepare on/off pictures for file panel buttons
 	BView *view = new BView(BRect(0, 0, 19, 15), "", B_FOLLOW_NONE, 0);
@@ -455,7 +456,7 @@ BPopUpMenu *PrefsWindow::make_disptype_popup(BRect frame, char *label_text, uint
 	popup->AddItem(new BMenuItem("Screen", new BMessage(what)));
 	popup->SetTargetForItems(this);
 	BMenuField *menu_field = new BMenuField(frame, "display_type", label_text, popup);
-	menu_field->SetDivider(frame.Width()-55);
+	menu_field->SetDivider(frame.Width()-75);
 	menu_field->SetAlignment(B_ALIGN_RIGHT);
 	parent->AddChild(menu_field);
 	return popup;
@@ -473,7 +474,7 @@ BPopUpMenu *PrefsWindow::make_sidtype_popup(BRect frame, char *label_text, uint3
 	popup->AddItem(new BMenuItem("Digital", new BMessage(what)));
 	popup->SetTargetForItems(this);
 	BMenuField *menu_field = new BMenuField(frame, "sid_type", label_text, popup);
-	menu_field->SetDivider(frame.Width()-55);
+	menu_field->SetDivider(frame.Width()-75);
 	menu_field->SetAlignment(B_ALIGN_RIGHT);
 	parent->AddChild(menu_field);
 	return popup;
@@ -493,7 +494,28 @@ BPopUpMenu *PrefsWindow::make_reusize_popup(BRect frame, char *label_text, uint3
 	popup->AddItem(new BMenuItem("512K", new BMessage(what)));
 	popup->SetTargetForItems(this);
 	BMenuField *menu_field = new BMenuField(frame, "reu_size", label_text, popup);
-	menu_field->SetDivider(frame.Width()-55);
+	menu_field->SetDivider(frame.Width()-75);
+	menu_field->SetAlignment(B_ALIGN_RIGHT);
+	parent->AddChild(menu_field);
+	return popup;
+}
+
+
+/*
+ *  Create joystick port popup
+ */
+
+BPopUpMenu *PrefsWindow::make_joystick_popup(BRect frame, char *label_text, uint32 what, BView *parent)
+{
+	BPopUpMenu *popup = new BPopUpMenu("joystick popup", true, true);
+	popup->AddItem(new BMenuItem("None", new BMessage(what)));
+	popup->AddItem(new BMenuItem("Joystick Port 1", new BMessage(what)));
+	popup->AddItem(new BMenuItem("Joystick Port 2", new BMessage(what)));
+	popup->AddItem(new BMenuItem("GeekPort A", new BMessage(what)));
+	popup->AddItem(new BMenuItem("GeekPort B", new BMessage(what)));
+	popup->SetTargetForItems(this);
+	BMenuField *menu_field = new BMenuField(frame, "joystick", label_text, popup);
+	menu_field->SetDivider(60);
 	menu_field->SetAlignment(B_ALIGN_RIGHT);
 	parent->AddChild(menu_field);
 	return popup;
@@ -525,8 +547,8 @@ void PrefsWindow::set_values(void)
 
 	g_sprites_on->SetValue(prefs->SpritesOn ? B_CONTROL_ON : B_CONTROL_OFF);
 	g_sprite_collisions->SetValue(prefs->SpriteCollisions ? B_CONTROL_ON : B_CONTROL_OFF);
-	g_joystick_1_on->SetValue(prefs->Joystick1On ? B_CONTROL_ON : B_CONTROL_OFF);
-	g_joystick_2_on->SetValue(prefs->Joystick2On ? B_CONTROL_ON : B_CONTROL_OFF);
+	g_joystick_1_port->ItemAt(prefs->Joystick1Port)->SetMarked(true);
+	g_joystick_2_port->ItemAt(prefs->Joystick2Port)->SetMarked(true);
 	g_joystick_swap->SetValue(prefs->JoystickSwap ? B_CONTROL_ON : B_CONTROL_OFF);
 	g_limit_speed->SetValue(prefs->LimitSpeed ? B_CONTROL_ON : B_CONTROL_OFF);
 	g_fast_reset->SetValue(prefs->FastReset ? B_CONTROL_ON : B_CONTROL_OFF);
@@ -615,12 +637,12 @@ void PrefsWindow::MessageReceived(BMessage *msg)
 			prefs->SpriteCollisions = !prefs->SpriteCollisions;
 			break;
 
-		case MSG_JOYSTICK_1_ON:
-			prefs->Joystick1On = !prefs->Joystick1On;
+		case MSG_JOYSTICK_1_PORT:
+			prefs->Joystick1Port = msg->FindInt32("index");
 			break;
 
-		case MSG_JOYSTICK_2_ON:
-			prefs->Joystick2On = !prefs->Joystick2On;
+		case MSG_JOYSTICK_2_PORT:
+			prefs->Joystick2Port = msg->FindInt32("index");
 			break;
 
 		case MSG_JOYSTICK_SWAP:
@@ -775,7 +797,7 @@ bool PrefsWindow::FilterKeyDown(uint32 *aChar, BView **target)
 	if (*aChar == B_ESCAPE) {
 		// Flash Cancel button
 		g_cancel->SetValue(B_CONTROL_ON);
-		snooze(100000.0);
+		snooze(100000);
 		PostMessage(MSG_CANCEL);
 	}
 	return true;

@@ -20,6 +20,7 @@
 
 #include <KernelKit.h>
 #include <device/Joystick.h>
+#include <device/DigitalPort.h>
 
 #undef PROFILING
 
@@ -30,8 +31,8 @@
 
 void C64::c64_ctor1(void)
 {
-	joy[0] = new BJoystick();
-	joy[1] = new BJoystick();
+	joy[0] = joy[1] = NULL;
+	joy_geek_port[0] = joy_geek_port[1] = false;
 }
 
 void C64::c64_ctor2(void)
@@ -57,9 +58,6 @@ void C64::c64_dtor(void)
 {
 	delete_sem(pause_sem);
 	delete_sem(sound_sync_sem);
-
-	delete joy[0];
-	delete joy[1];
 }
 
 
@@ -224,25 +222,50 @@ void C64::SoundSync(void)
  *  joystick preferences
  */
 
-void C64::open_close_joysticks(bool oldjoy1, bool oldjoy2, bool newjoy1, bool newjoy2)
+void C64::open_close_joystick(int port, int oldjoy, int newjoy)
 {
-	if (oldjoy1 != newjoy1) {
+	if (oldjoy != newjoy) {
 		joy_minx = joy_miny = 32767;	// Reset calibration
 		joy_maxx = joy_maxy = 0;
-		if (newjoy1)
-			joy[0]->Open("joystick2");
-		else
-			joy[0]->Close();
+		if (joy[port]) {
+			if (joy_geek_port[port]) {
+				((BDigitalPort *)joy[port])->Close();
+				delete (BDigitalPort *)joy[port];
+			} else {
+				((BJoystick *)joy[port])->Close();
+				delete (BJoystick *)joy[port];
+			}
+			joy[port] = NULL;
+		}
+		switch (newjoy) {
+			case 1:
+				joy[port] = new BJoystick;
+				((BJoystick *)joy[port])->Open("joystick1");
+				joy_geek_port[port] = false;
+				break;
+			case 2:
+				joy[port] = new BJoystick;
+				((BJoystick *)joy[port])->Open("joystick2");
+				joy_geek_port[port] = false;
+				break;
+			case 3:
+				joy[port] = new BDigitalPort;
+				((BDigitalPort *)joy[port])->Open("DigitalA");
+				joy_geek_port[port] = true;
+				break;
+			case 4:
+				joy[port] = new BDigitalPort;
+				((BDigitalPort *)joy[port])->Open("DigitalB");
+				joy_geek_port[port] = true;
+				break;
+		}
 	}
+}
 
-	if (oldjoy2 != newjoy2) {
-		joy_minx = joy_miny = 32767;	// Reset calibration
-		joy_maxx = joy_maxy = 0;
-		if (newjoy2)
-			joy[1]->Open("joystick1");
-		else
-			joy[1]->Close();
-	}
+void C64::open_close_joysticks(int oldjoy1, int oldjoy2, int newjoy1, int newjoy2)
+{
+	open_close_joystick(0, oldjoy1, newjoy1);
+	open_close_joystick(1, oldjoy2, newjoy2);
 }
 
 
@@ -254,31 +277,46 @@ uint8 C64::poll_joystick(int port)
 {
 	uint8 j = 0xff;
 
-	if (joy[port]->Update() != B_ERROR) {
-		if (joy[port]->horizontal > joy_maxx)
-			joy_maxx = joy[port]->horizontal;
-		if (joy[port]->horizontal < joy_minx)
-			joy_minx = joy[port]->horizontal;
-		if (joy[port]->vertical > joy_maxy)
-			joy_maxy = joy[port]->vertical;
-		if (joy[port]->vertical < joy_miny)
-			joy_miny = joy[port]->vertical;
+	if (joy[port] == NULL)
+		return j;
 
-		if (!joy[port]->button1)
-			j &= 0xef;							// Button
+	if (joy_geek_port[port]) {
 
-		if (joy_maxx-joy_minx < 100 || joy_maxy-joy_miny < 100)
-			return j;
+		// GeekPort
+		uint8 val;
+		if (((BDigitalPort *)joy[port])->Read(&val) == 1)
+			j = val | 0xe0;
 
-		if (joy[port]->horizontal < (joy_minx + (joy_maxx-joy_minx)/3))
-			j &= 0xf7;							// Right
-		else if (joy[port]->horizontal > (joy_minx + 2*(joy_maxx-joy_minx)/3))
-			j &= 0xfb;							// Left
+	} else {
 
-		if (joy[port]->vertical < (joy_miny + (joy_maxy-joy_miny)/3))
-			j &= 0xfd;							// Down
-		else if (joy[port]->vertical > (joy_miny + 2*(joy_maxy-joy_miny)/3))
-			j &= 0xfe;							// Up
+		// Joystick port
+		BJoystick *p = (BJoystick *)joy[port];
+		if (p->Update() != B_ERROR) {
+			if (p->horizontal > joy_maxx)
+				joy_maxx = p->horizontal;
+			if (p->horizontal < joy_minx)
+				joy_minx = p->horizontal;
+			if (p->vertical > joy_maxy)
+				joy_maxy = p->vertical;
+			if (p->vertical < joy_miny)
+				joy_miny = p->vertical;
+	
+			if (!p->button1)
+				j &= 0xef;							// Button
+	
+			if (joy_maxx-joy_minx < 100 || joy_maxy-joy_miny < 100)
+				return j;
+	
+			if (p->horizontal < (joy_minx + (joy_maxx-joy_minx)/3))
+				j &= 0xf7;							// Right
+			else if (p->horizontal > (joy_minx + 2*(joy_maxx-joy_minx)/3))
+				j &= 0xfb;							// Left
+	
+			if (p->vertical < (joy_miny + (joy_maxy-joy_miny)/3))
+				j &= 0xfd;							// Down
+			else if (p->vertical > (joy_miny + 2*(joy_maxy-joy_miny)/3))
+				j &= 0xfe;							// Up
+		}
 	}
 	return j;
 }

@@ -156,7 +156,7 @@ void C64::c64_dtor(void)
 }
 
 
-void C64::open_close_joysticks(bool oldjoy1, bool oldjoy2, bool newjoy1, bool newjoy2)
+void C64::open_close_joysticks(int oldjoy1, int oldjoy2, int newjoy1, int newjoy2)
 {
   // Check if the Joystick module is loaded. If not then write an illegal value to
   // the joystick state.

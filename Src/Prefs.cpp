@@ -64,11 +64,11 @@ Prefs::Prefs()
 	SIDType = SIDTYPE_NONE;
 	REUSize = REU_NONE;
 	DisplayType = DISPTYPE_WINDOW;
+	Joystick1Port = 0;
+	Joystick2Port = 0;
 
 	SpritesOn = true;
 	SpriteCollisions = true;
-	Joystick1On = false;
-	Joystick2On = false;
 	JoystickSwap = false;
 	LimitSpeed = false;
 	FastReset = false;
@@ -121,8 +121,8 @@ bool Prefs::operator==(const Prefs &rhs) const
 		&& DisplayType == rhs.DisplayType
 		&& SpritesOn == rhs.SpritesOn
 		&& SpriteCollisions == rhs.SpriteCollisions
-		&& Joystick1On == rhs.Joystick1On
-		&& Joystick2On == rhs.Joystick2On
+		&& Joystick1Port == rhs.Joystick1Port
+		&& Joystick2Port == rhs.Joystick2Port
 		&& JoystickSwap == rhs.JoystickSwap
 		&& LimitSpeed == rhs.LimitSpeed
 		&& FastReset == rhs.FastReset
@@ -262,14 +262,14 @@ void Prefs::Load(char *filename)
 						REUSize = REU_NONE;
 				} else if (!strcmp(keyword, "DisplayType"))
 					DisplayType = strcmp(value, "SCREEN") ? DISPTYPE_WINDOW : DISPTYPE_SCREEN;
+				else if (!strcmp(keyword, "Joystick1Port"))
+					Joystick1Port = atoi(value);
+				else if (!strcmp(keyword, "Joystick2Port"))
+					Joystick2Port = atoi(value);
 				else if (!strcmp(keyword, "SpritesOn"))
 					SpritesOn = !strcmp(value, "TRUE");
 				else if (!strcmp(keyword, "SpriteCollisions"))
 					SpriteCollisions = !strcmp(value, "TRUE");
-				else if (!strcmp(keyword, "Joystick1On"))
-					Joystick1On = !strcmp(value, "TRUE");
-				else if (!strcmp(keyword, "Joystick2On"))
-					Joystick2On = !strcmp(value, "TRUE");
 				else if (!strcmp(keyword, "JoystickSwap"))
 					JoystickSwap = !strcmp(value, "TRUE");
 				else if (!strcmp(keyword, "LimitSpeed"))
@@ -379,10 +379,10 @@ bool Prefs::Save(char *filename)
 				break;
 		};
 		fprintf(file, "DisplayType = %s\n", DisplayType == DISPTYPE_WINDOW ? "WINDOW" : "SCREEN");
+		fprintf(file, "Joystick1Port = %d\n", Joystick1Port);
+		fprintf(file, "Joystick2Port = %d\n", Joystick2Port);
 		fprintf(file, "SpritesOn = %s\n", SpritesOn ? "TRUE" : "FALSE");
 		fprintf(file, "SpriteCollisions = %s\n", SpriteCollisions ? "TRUE" : "FALSE");
-		fprintf(file, "Joystick1On = %s\n", Joystick1On ? "TRUE" : "FALSE");
-		fprintf(file, "Joystick2On = %s\n", Joystick2On ? "TRUE" : "FALSE");
 		fprintf(file, "JoystickSwap = %s\n", JoystickSwap ? "TRUE" : "FALSE");
 		fprintf(file, "LimitSpeed = %s\n", LimitSpeed ? "TRUE" : "FALSE");
 		fprintf(file, "FastReset = %s\n", FastReset ? "TRUE" : "FALSE");

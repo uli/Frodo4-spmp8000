@@ -225,7 +225,7 @@ void C64::CheckTimerChange()
 
 BOOL joystick_open[2];
 
-void C64::open_close_joysticks(bool oldjoy1, bool oldjoy2, bool newjoy1, bool newjoy2)
+void C64::open_close_joysticks(int oldjoy1, int oldjoy2, int newjoy1, int newjoy2)
 {
 	if (oldjoy1 != newjoy1) {
 		joystick_open[0] = FALSE;

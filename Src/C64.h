@@ -23,7 +23,6 @@
 
 #ifdef __BEOS__
 #include <KernelKit.h>
-#include <device/Joystick.h>
 #endif
 
 #ifdef AMIGA
@@ -119,7 +118,7 @@ private:
 	void c64_ctor1(void);
 	void c64_ctor2(void);
 	void c64_dtor(void);
-	void open_close_joysticks(bool oldjoy1, bool oldjoy2, bool newjoy1, bool newjoy2);
+	void open_close_joysticks(int oldjoy1, int oldjoy2, int newjoy1, int newjoy2);
 	uint8 poll_joystick(int port);
 	void thread_func(void);
 
@@ -139,12 +138,14 @@ public:
 
 private:
 	static long thread_invoc(void *obj);
+	void open_close_joystick(int port, int oldjoy, int newjoy);
 
-	BJoystick *joy[2];		// Joystick objects
+	void *joy[2];			// Joystick objects (BJoystick or BDigitalPort)
+	bool joy_geek_port[2];	// Flag: joystick on GeekPort?
 	thread_id the_thread;
 	sem_id pause_sem;
 	sem_id sound_sync_sem;
-	double start_time;
+	bigtime_t start_time;
 #endif
 
 #ifdef AMIGA

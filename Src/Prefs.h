@@ -82,6 +82,8 @@ public:
 	int SIDType;			// SID emulation type
 	int REUSize;			// Size of REU
 	int DisplayType;		// Display type (BeOS)
+	int Joystick1Port;		// Port that joystick 1 is connected to (0 = no joystick, all other values are system dependant)
+	int Joystick2Port;		// Port that joystick 2 is connected to
 	int LatencyMin;			// Min msecs ahead of sound buffer (Win32)
 	int LatencyMax;			// Max msecs ahead of sound buffer (Win32)
 	int LatencyAvg;			// Averaging interval in msecs (Win32)
@@ -90,8 +92,6 @@ public:
 
 	bool SpritesOn;			// Sprite display is on
 	bool SpriteCollisions;	// Sprite collision detection is on
-	bool Joystick1On;		// Joystick connected to port 1 of host
-	bool Joystick2On;		// Joystick connected to port 2 of host
 	bool JoystickSwap;		// Swap joysticks 1<->2
 	bool LimitSpeed;		// Limit speed to 100%
 	bool FastReset;			// Skip RAM test on reset
@@ -100,6 +100,7 @@ public:
 	bool Emul1541Proc;		// Enable processor-level 1541 emulation
 	bool SIDFilters;		// Emulate SID filters
 	bool DoubleScan;		// Double scan lines (BeOS, if DisplayType == DISPTYPE_SCREEN)
+	bool JoystickGeekPort;	// Enable GeekPort joystick adapter
 	bool HideCursor;		// Hide mouse cursor when visible (Win32)
 	bool DirectSound;		// Use direct sound (instead of wav) (Win32)
 	bool ExclusiveSound;	// Use exclusive mode with direct sound (Win32)

@@ -227,7 +227,7 @@ void C64::VBlank(bool draw_frame)
  *  joystick preferences
  */
 
-void C64::open_close_joysticks(bool oldjoy1, bool oldjoy2, bool newjoy1, bool newjoy2)
+void C64::open_close_joysticks(int oldjoy1, int oldjoy2, int newjoy1, int newjoy2)
 {
 	if (game_open && (oldjoy2 != newjoy2))
 

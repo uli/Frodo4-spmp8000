@@ -103,7 +103,7 @@ C64::C64()
 	memset(RAM1541, 0, DRIVE_RAM_SIZE);
 
 	// Open joystick drivers if required
-	open_close_joysticks(false, false, ThePrefs.Joystick1On, ThePrefs.Joystick2On);
+	open_close_joysticks(0, 0, ThePrefs.Joystick1Port, ThePrefs.Joystick2Port);
 	joykey = 0xff;
 
 #ifdef FRODO_SC
@@ -121,7 +121,7 @@ C64::C64()
 
 C64::~C64()
 {
-	open_close_joysticks(ThePrefs.Joystick1On, ThePrefs.Joystick2On, false, false);
+	open_close_joysticks(ThePrefs.Joystick1Port, ThePrefs.Joystick2Port, 0, 0);
 
 	delete TheJob1541;
 	delete TheREU;
@@ -179,7 +179,7 @@ void C64::NMI(void)
 
 void C64::NewPrefs(Prefs *prefs)
 {
-	open_close_joysticks(ThePrefs.Joystick1On, ThePrefs.Joystick2On, prefs->Joystick1On, prefs->Joystick2On);
+	open_close_joysticks(ThePrefs.Joystick1Port, ThePrefs.Joystick2Port, prefs->Joystick1Port, prefs->Joystick2Port);
 	PatchKernal(prefs->FastReset, prefs->Emul1541Proc);
 
 	TheDisplay->NewPrefs(prefs);
