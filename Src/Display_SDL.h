@@ -102,7 +102,7 @@ C64Display::C64Display(C64 *the_c64) : TheC64(the_c64)
 	// Start timer for LED error blinking
 	c64_disp = this;
 	pulse_sa.sa_handler = (void (*)(int))pulse_handler;
-	pulse_sa.sa_flags = 0;
+	pulse_sa.sa_flags = SA_RESTART;
 	sigemptyset(&pulse_sa.sa_mask);
 	sigaction(SIGALRM, &pulse_sa, NULL);
 	pulse_tv.it_interval.tv_sec = 0;
