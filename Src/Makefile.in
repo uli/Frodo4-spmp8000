@@ -38,15 +38,12 @@ all: Frodo FrodoPC FrodoSC
 
 Frodo: $(SLOBJS)
 	$(CXX) -o Frodo $(SLOBJS) $(LDFLAGS) $(LIBS)
-	cp Frodo ..
 
 FrodoPC: $(PCOBJS)
 	$(CXX) -o FrodoPC $(PCOBJS) $(LDFLAGS) $(LIBS)
-	cp FrodoPC ..
 
 FrodoSC: $(SCOBJS)
 	$(CXX) -o FrodoSC $(SCOBJS) $(LDFLAGS) $(LIBS)
-	cp FrodoSC ..
 
 clean:
 	rm -f $(SLOBJS) $(PCOBJS) $(SCOBJS)
