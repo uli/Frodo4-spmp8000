@@ -1,8 +1,9 @@
 dnl Process this file with autoconf to produce a configure script.
 
-AC_INIT
-AC_CONFIG_SRCDIR([VIC.cpp])
-AC_PREREQ(2.52d)
+AC_INIT(Frodo, 4.2, [Christian.Bauer@uni-mainz.de])
+AC_CONFIG_SRCDIR(main.cpp)
+AC_PREREQ(2.52)
+AC_CONFIG_HEADER(sysconfig.h)
 
 dnl Checks for programs.
 AC_PROG_CC
@@ -33,7 +34,6 @@ AC_CHECK_LIB(vga, vga_setmode, HAVE_SVGA_LIB=yes, HAVE_SVGA_LIB=no)
 AM_PATH_SDL(1.2.0, HAVE_SDL=yes, HAVE_SDL=no)
 
 AC_PATH_XTRA
-AC_CONFIG_HEADER(sysconfig.h)
 
 AC_HEADER_DIRENT
 AC_HEADER_STDC
@@ -47,8 +47,6 @@ AC_CHECK_SIZEOF(long)
 AC_CHECK_SIZEOF(long long)
 
 dnl Checks for typedefs, structures, and compiler characteristics.
-AC_C_CONST
-AC_C_INLINE
 AC_TYPE_MODE_T
 AC_TYPE_OFF_T
 AC_TYPE_PID_T
