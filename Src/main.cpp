@@ -32,16 +32,20 @@ char AppDirPath[1024];	// Path of application directory
 
 
 // ROM file names
+#ifndef DATADIR
+#define DATADIR
+#endif
+
 #ifdef __riscos__
 #define BASIC_ROM_FILE	"FrodoRsrc:Basic_ROM"
 #define KERNAL_ROM_FILE	"FrodoRsrc:Kernal_ROM"
 #define CHAR_ROM_FILE	"FrodoRsrc:Char_ROM"
 #define FLOPPY_ROM_FILE	"FrodoRsrc:1541_ROM"
 #else
-#define BASIC_ROM_FILE	"Basic ROM"
-#define KERNAL_ROM_FILE	"Kernal ROM"
-#define CHAR_ROM_FILE	"Char ROM"
-#define FLOPPY_ROM_FILE	"1541 ROM"
+#define BASIC_ROM_FILE DATADIR "Basic ROM"
+#define KERNAL_ROM_FILE DATADIR "Kernal ROM"
+#define CHAR_ROM_FILE DATADIR "Char ROM"
+#define FLOPPY_ROM_FILE DATADIR "1541 ROM"
 #endif
 
 

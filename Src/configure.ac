@@ -10,6 +10,7 @@ AC_PROG_CC
 AC_PROG_CXX
 AC_PROG_CPP
 AC_PROG_MAKE_SET
+AC_PROG_INSTALL
 
 dnl Don't want the default "-O2 -g" that autoconf uses for gcc.
 if [[ x"$GXX" = "xyes" ]]; then
