@@ -17,14 +17,6 @@ if [[ x"$GXX" = "xyes" ]]; then
   CFLAGS="$CFLAGS -fomit-frame-pointer -fno-exceptions"
 fi
 
-UNAME_RELEASE=`(uname -r) 2>/dev/null` || UNAME_RELEASE=unknown
-UNAME_SYSTEM=`(uname -s) 2>/dev/null` || UNAME_SYSTEM=unknown
-
-HPUX_REV=0
-if [[ x$UNAME_SYSTEM = "xHP-UX" ]]; then
-  HPUX_REV=`echo $UNAME_RELEASE | sed -e 's/[^.]*.[0B]*//' -e 's/\..*$//'`
-fi
-
 AC_AIX
 AC_ISC_POSIX
 
@@ -95,71 +87,6 @@ else
   LIBS="$LIBS $X_LIBS $X_PRE_LIBS -lXext -lX11 $X_EXTRA_LIBS"
 fi
 
-dnl Find out some things about the system 
-dnl  - whether we have GCC 2.7 or better.
-dnl  - what CPU we have (to use some assembly hacks on the x86)
-
-HAVEGCC27=n
-HAVEI386=n
-
-cat >conftest.cpp << EOF
-#include <stdio.h>
-int main()
-{
-#if defined(__GNUC__) && defined(__GNUC_MINOR__)
-#if __GNUC__ > 2 || __GNUC_MINOR__ > 6
-printf("GNU\n");
-#endif
-#endif
-return 0;
-}
-EOF
-
-$CXX conftest.cpp -c -o conftest.o
-$CXX conftest.o -o conftest
-./conftest >conftest.file
-if grep GNU conftest.file >/dev/null; then
-  HAVEGCC27=y
-  echo "Good news. Found GCC 2.7 or better."
-elif [[ "$CC" = "gcc" ]]; then
-  echo "I suggest you upgrade to at least version 2.7 of GCC"
-else
-  echo "Couldn't find GCC. Frodo may or may not compile and run correctly."
-fi
-
-cat >conftest.c << EOF
-#include <stdio.h>
-int main()
-{
-#ifdef __i386__
-printf("386\n");
-#endif
-return 0;
-}
-EOF
-
-$CC conftest.c -c -o conftest.o
-$CC conftest.o -o conftest
-./conftest >conftest.file
-if grep 386 conftest.file >/dev/null; then
-  HAVEI386=y
-  echo "You seem to be using a x86 CPU"
-else
-  echo "No special hacks for your CPU, sorry."
-fi
-
-rm -f conftest*
-
-if [[ "$HAVEGCC27" = "y" -a "$HAVEI386" = "y" ]]; then
-  CFLAGS="$CFLAGS -DREGPARAM=\"__attribute__((regparm(3)))\""
-elif [[ "$TARGET" = "amigaos" ]]; then
-  CFLAGS="$CFLAGS -DREGPARAM=\"__attribute__((regargs(4)))\" "
-else
-  CFLAGS="$CFLAGS -DREGPARAM="
-fi
-
-CC=$CXX
- 
 AC_SUBST(TARGET)
 AC_SUBST(SET_MAKE)
 AC_SUBST(top_srcdir)
