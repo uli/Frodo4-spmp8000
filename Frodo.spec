@@ -14,6 +14,13 @@ BuildRoot: %{_tmppath}/%{name}-root
 Prefix: %{_prefix}
 
 %description
+Frodo is a free, portable Commodore 64 emulator that runs on a variety
+of platforms, with a focus on the exact reproduction of special graphical
+effects possible on the C64.
+
+Frodo comes in three flavours: The "normal" Frodo with a line-based
+emulation, the improved line-based emulation "Frodo PC", and the
+single-cycle emulation "Frodo SC" that is slower but far more compatible.
 
 %prep
 %setup -q
@@ -39,7 +46,7 @@ rm -rf ${RPM_BUILD_ROOT}
 %{_bindir}/FrodoPC
 %{_bindir}/FrodoSC
 %{_bindir}/Frodo_GUI.tcl
-"%{_datadir}/Frodo/1541 ROM"
-"%{_datadir}/Frodo/Basic ROM"
-"%{_datadir}/Frodo/Char ROM"
-"%{_datadir}/Frodo/Kernal ROM"
+"%{_datadir}/frodo/1541 ROM"
+"%{_datadir}/frodo/Basic ROM"
+"%{_datadir}/frodo/Char ROM"
+"%{_datadir}/frodo/Kernal ROM"
