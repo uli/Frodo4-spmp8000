@@ -23,7 +23,7 @@
 
 // Version/revision
 const int FRODO_VERSION = 4;
-const int FRODO_REVISION = 1;
-const char VERSION_STRING[] = "Frodo V4.1b";
+const int FRODO_REVISION = 2;
+const char VERSION_STRING[] = "Frodo V4.2";
 
 #endif

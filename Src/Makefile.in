@@ -2,7 +2,7 @@
 
 ## Version information
 VERSION   = 4
-REVISION  = 1
+REVISION  = 2
 
 @SET_MAKE@
 CXX    = @CXX@
