@@ -17,7 +17,7 @@ DESTDIR =
 
 CXX = @CXX@
 CFLAGS = @CFLAGS@ -I./ -DFRODO_HPUX_REV=@HPUX_REV@ -DKBD_LANG=@KBD_LANG@
-DEFS = @DEFS@ -DDATADIR=\"$(datadir)/frodo/\"
+DEFS = @DEFS@ -DDATADIR=\"$(datadir)/frodo/\" -DBINDIR=\"$(bindir)/\"
 LDFLAGS = @LDFLAGS@
 LIBS = @LIBS@
 INSTALL = @INSTALL@
@@ -58,6 +58,7 @@ install: Frodo FrodoPC FrodoSC installdirs
 	$(INSTALL_PROGRAM) Frodo $(DESTDIR)$(bindir)/Frodo
 	$(INSTALL_PROGRAM) FrodoPC $(DESTDIR)$(bindir)/FrodoPC
 	$(INSTALL_PROGRAM) FrodoSC $(DESTDIR)$(bindir)/FrodoSC
+	$(INSTALL_PROGRAM) Frodo_GUI.tcl $(DESTDIR)$(bindir)/Frodo_GUI.tcl
 	$(INSTALL_DATA) ../1541\ ROM $(DESTDIR)$(datadir)/frodo/1541\ ROM
 	$(INSTALL_DATA) ../Basic\ ROM $(DESTDIR)$(datadir)/frodo/Basic\ ROM
 	$(INSTALL_DATA) ../Char\ ROM $(DESTDIR)$(datadir)/frodo/Char\ ROM
@@ -70,6 +71,7 @@ uninstall:
 	rm -f $(DESTDIR)$(bindir)/Frodo
 	rm -f $(DESTDIR)$(bindir)/FrodoPC
 	rm -f $(DESTDIR)$(bindir)/FrodoSC
+	rm -f $(DESTDIR)$(bindir)/Frodo_GUI.tcl
 	rm -f $(DESTDIR)$(datadir)/frodo/1541\ ROM
 	rm -f $(DESTDIR)$(datadir)/frodo/Basic\ ROM
 	rm -f $(DESTDIR)$(datadir)/frodo/Char\ ROM

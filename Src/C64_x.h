@@ -113,7 +113,7 @@ void C64::c64_ctor1(void)
 	gui = 0;
 #else
 	// try to start up Tk gui.
-	gui = new CmdPipe("wish", "TkGui.tcl");
+	gui = new CmdPipe("wish", BINDIR "Frodo_GUI.tcl");
 	if (gui) {
 		if (gui->fail) {
 			delete gui; gui = 0;
