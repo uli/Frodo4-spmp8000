@@ -1,6 +1,6 @@
 dnl Process this file with autoconf to produce a configure script.
 
-AC_INIT(Frodo, 4.2, [Christian.Bauer@uni-mainz.de])
+AC_INIT(Frodo, 4.2, [Christian.Bauer@uni-mainz.de], Frodo)
 AC_CONFIG_SRCDIR(main.cpp)
 AC_PREREQ(2.52)
 AC_CONFIG_HEADER(sysconfig.h)
