@@ -49,11 +49,51 @@
 #include "1541t64.h"
 #include "Prefs.h"
 #include "Display.h"
+#include "main.h"
+
+
+// IEC command codes
+enum {
+	CMD_DATA = 0x60,	// Data transfer
+	CMD_CLOSE = 0xe0,	// Close channel
+	CMD_OPEN = 0xf0		// Open channel
+};
+
+// IEC ATN codes
+enum {
+	ATN_LISTEN = 0x20,
+	ATN_UNLISTEN = 0x30,
+	ATN_TALK = 0x40,
+	ATN_UNTALK = 0x50
+};
 
 
 /*
  *  Constructor: Initialize variables
  */
+
+Drive *IEC::create_drive(const char *path)
+{
+	if (IsDirectory(path)) {
+		// Mount host directory
+		return new FSDrive(this, path);
+	} else {
+		// Not a directory, check for mountable file type
+		int type;
+		if (IsMountableFile(path, type)) {
+			if (type == FILE_IMAGE) {
+				// Mount disk image
+				return new ImageDrive(this, path);
+			} else {
+				// Mount archive type file
+				return new ArchDrive(this, path);
+			}
+		} else {
+			// Unknown file type
+			// print error?
+		}
+	}
+}
 
 IEC::IEC(C64Display *display) : the_display(display)
 {
@@ -63,15 +103,10 @@ IEC::IEC(C64Display *display) : the_display(display)
 	for (i=0; i<4; i++)
 		drive[i] = NULL;	// Important because UpdateLEDs is called from the drive constructors (via set_error)
 
-	if (!ThePrefs.Emul1541Proc)
-		for (i=0; i<4; i++) {
-			if (ThePrefs.DriveType[i] == DRVTYPE_DIR)
-				drive[i] = new FSDrive(this, ThePrefs.DrivePath[i]);
-			else if (ThePrefs.DriveType[i] == DRVTYPE_D64)
-				drive[i] = new ImageDrive(this, ThePrefs.DrivePath[i]);
-			else
-				drive[i] = new ArchDrive(this, ThePrefs.DrivePath[i]);
-		}
+	if (!ThePrefs.Emul1541Proc) {
+		for (i=0; i<4; i++)
+			drive[i] = create_drive(ThePrefs.DrivePath[i]);
+	}
 
 	listener_active = talker_active = false;
 	listening = false;
@@ -112,19 +147,14 @@ void IEC::Reset(void)
 void IEC::NewPrefs(Prefs *prefs)
 {
 	// Delete and recreate all changed drives
-	for (int i=0; i<4; i++)
-		if ((ThePrefs.DriveType[i] != prefs->DriveType[i]) || strcmp(ThePrefs.DrivePath[i], prefs->DrivePath[i]) || ThePrefs.Emul1541Proc != prefs->Emul1541Proc) {
+	for (int i=0; i<4; i++) {
+		if (strcmp(ThePrefs.DrivePath[i], prefs->DrivePath[i]) || ThePrefs.Emul1541Proc != prefs->Emul1541Proc) {
 			delete drive[i];
 			drive[i] = NULL;	// Important because UpdateLEDs is called from drive constructors (via set_error())
-			if (!prefs->Emul1541Proc) {
-				if (prefs->DriveType[i] == DRVTYPE_DIR)
-					drive[i] = new FSDrive(this, prefs->DrivePath[i]);
-				else if (prefs->DriveType[i] == DRVTYPE_D64)
-					drive[i] = new ImageDrive(this, prefs->DrivePath[i]);
-				else
-					drive[i] = new ArchDrive(this, prefs->DrivePath[i]);
-			}
+			if (!prefs->Emul1541Proc)
+				drive[i] = create_drive(prefs->DrivePath[i]);
 		}
+	}
 
 	UpdateLEDs();
 }
@@ -872,4 +902,52 @@ char petscii2ascii(uint8 c)
 void petscii2ascii(char *dest, const uint8 *src, int n)
 {
 	while (n-- && (*dest++ = petscii2ascii(*src++))) ;
+}
+
+
+/*
+ *  Check whether file is a mountable disk image or archive file, return type
+ */
+
+bool IsMountableFile(const char *path, int &type)
+{
+	// Read header and determine file size
+	uint8 header[64];
+	memset(header, 0, sizeof(header));
+	FILE *f = fopen(path, "rb");
+	if (f == NULL)
+		return false;
+	fseek(f, 0, SEEK_END);
+	long size = ftell(f);
+	fseek(f, 0, SEEK_SET);
+	fread(header, 1, sizeof(header), f);
+	fclose(f);
+
+	if (IsImageFile(path, header, size)) {
+		type = FILE_IMAGE;
+		return true;
+	} else if (IsArchFile(path, header, size)) {
+		type = FILE_ARCH;
+		return true;
+	} else
+		return false;
+}
+
+
+/*
+ *  Read directory of mountable disk image or archive file into c64_dir_entry vector,
+ *  returns false on error
+ */
+
+bool ReadDirectory(const char *path, int type, vector<c64_dir_entry> &vec)
+{
+	vec.clear();
+	switch (type) {
+		case FILE_IMAGE:
+			return ReadImageDirectory(path, vec);
+		case FILE_ARCH:
+			return ReadArchDirectory(path, vec);
+		default:
+			return false;
+	}
 }

@@ -44,10 +44,6 @@ const uint32 MSG_SID_FILTERS = 'filt';
 const uint32 MSG_DOUBLE_SCAN = 'dbls';
 const uint32 MSG_MAP_SLASH = 'mpsl';
 const uint32 MSG_EMUL_1541_PROC = '15pr';
-const uint32 MSG_DRVTYPE_8 = 'drt8';
-const uint32 MSG_DRVTYPE_9 = 'drt9';
-const uint32 MSG_DRVTYPE_10 = 'drt:';
-const uint32 MSG_DRVTYPE_11 = 'drt;';
 const uint32 MSG_GETDRIVE_8 = 'gtd8';
 const uint32 MSG_GETDRIVE_9 = 'gtd9';
 const uint32 MSG_GETDRIVE_10 = 'gtd:';
@@ -82,7 +78,6 @@ public:
 private:
 	BCheckBox *make_checkbox(BRect frame, char *label, uint32 what, BView *parent);
 	NumberControl *make_number_entry(BRect frame, char *label_text, BView *parent);
-	BPopUpMenu *make_drvtype_popup(BRect frame, uint32 what, BView *parent);
 	PathControl *make_path_entry(BRect frame, char *label, BView *parent);
 	BPopUpMenu *make_sidtype_popup(BRect frame, char *label_text, uint32 what, BView *parent);
 	BPopUpMenu *make_reusize_popup(BRect frame, char *label_text, uint32 what, BView *parent);
@@ -109,7 +104,6 @@ private:
 	NumberControl *g_floppy_cycles;
 	NumberControl *g_skip_frames;
 	PathControl *g_drive_path[4];
-	BPopUpMenu *g_drive_type[4];
 	BPopUpMenu *g_sid_type;
 	BPopUpMenu *g_reu_size;
 	BPopUpMenu *g_display_type;
@@ -347,7 +341,6 @@ PrefsWindow::PrefsWindow(Prefs *p, bool start, char *path) : BWindow(BRect(0, 0,
 		sprintf(str, "%d", i+8);
 		g_drive_path[i] = make_path_entry(BRect(10, 14+i*20, 299, 30+i*20), str, drvbox);
 		drvbox->AddChild(new BPictureButton(BRect(304, 16+i*20, 323, 31+i*20), "", new BPicture(*on), new BPicture(*off), new BMessage(MSG_GETDRIVE_8 + i)));
-		g_drive_type[i] = make_drvtype_popup(BRect(329, 14+i*20, 373, 30+i*20), MSG_DRVTYPE_8 + i, drvbox);
 	}
 
 	g_map_slash = make_checkbox(BRect(10, 94, 300, 110), "Map '/'<->'\\' in filenames", MSG_MAP_SLASH, drvbox);
@@ -371,6 +364,7 @@ PrefsWindow::PrefsWindow(Prefs *p, bool start, char *path) : BWindow(BRect(0, 0,
 	save_panel->Window()->SetTitle("Frodo: Save preferences");
 	file_panel = new BFilePanel(B_OPEN_PANEL, &this_messenger, NULL, 0, false, new BMessage(MSG_DRIVE_PANEL_RETURNED));
 	file_panel->SetPanelDirectory(&AppDirectory);
+	file_panel->Window()->SetTitle("Frodo: Select disk image or archive file");
 	dir_panel = new BFilePanel(B_OPEN_PANEL, &this_messenger, NULL, B_DIRECTORY_NODE, false, new BMessage(MSG_DRIVE_PANEL_RETURNED));
 	dir_panel->SetPanelDirectory(&AppDirectory);
 	dir_panel->Window()->SetTitle("Frodo: Select directory");
@@ -406,24 +400,6 @@ NumberControl *PrefsWindow::make_number_entry(BRect frame, char *label_text, BVi
 	num->ChildAt(0)->SetFont(be_plain_font);
 
 	return num;
-}
-
-
-/*
- *  Create drive type popup menu
- */
-
-BPopUpMenu *PrefsWindow::make_drvtype_popup(BRect frame, uint32 what, BView *parent)
-{
-	BPopUpMenu *popup = new BPopUpMenu("drive_type popup", true, true);
-	popup->AddItem(new BMenuItem("Dir", new BMessage(what)));
-	popup->AddItem(new BMenuItem("D64", new BMessage(what)));
-	popup->AddItem(new BMenuItem("T64", new BMessage(what)));
-	popup->SetTargetForItems(this);
-	BMenuField *menu_field = new BMenuField(frame, "drive_type", NULL, popup);
-	menu_field->SetDivider(0);
-	parent->AddChild(menu_field);
-	return popup;
 }
 
 
@@ -536,10 +512,8 @@ void PrefsWindow::set_values(void)
 	g_floppy_cycles->SetValue(prefs->FloppyCycles);
 	g_skip_frames->SetValue(prefs->SkipFrames);
 
-	for (int i=0; i<4; i++) {
-		g_drive_type[i]->ItemAt(prefs->DriveType[i])->SetMarked(true);
+	for (int i=0; i<4; i++)
 		g_drive_path[i]->SetText(prefs->DrivePath[i]);
-	}
 
 	g_sid_type->ItemAt(prefs->SIDType)->SetMarked(true);
 	g_reu_size->ItemAt(prefs->REUSize)->SetMarked(true);
@@ -690,28 +664,15 @@ void PrefsWindow::MessageReceived(BMessage *msg)
 			prefs->Emul1541Proc = !prefs->Emul1541Proc;
 			break;
 
-		case MSG_DRVTYPE_8:
-		case MSG_DRVTYPE_9:
-		case MSG_DRVTYPE_10:
-		case MSG_DRVTYPE_11:
-			prefs->DriveType[msg->what & 3] = msg->FindInt32("index");
-			break;
-
 		case MSG_GETDRIVE_8:
 		case MSG_GETDRIVE_9:
 		case MSG_GETDRIVE_10:
 		case MSG_GETDRIVE_11:
 			panel_drive_num = msg->what & 3;
-			file_panel->Hide();
-			dir_panel->Hide();
-			if (prefs->DriveType[panel_drive_num] == DRVTYPE_D64) {
-				file_panel->Window()->SetTitle("Frodo: Select disk image file");
-				file_panel->Show();
-			} else if (prefs->DriveType[panel_drive_num] == DRVTYPE_T64) {
-				file_panel->Window()->SetTitle("Frodo: Select archive file");
-				file_panel->Show();
-			} else
-				dir_panel->Show();
+//			file_panel->Hide();
+//			dir_panel->Hide();
+			file_panel->Show();
+//			dir_panel->Show();
 			break;
 
 		case MSG_DRIVE_PANEL_RETURNED:	{	// Drive path file panel returned

@@ -22,14 +22,6 @@
 #define _PREFS_H
 
 
-// Drive types
-enum {
-	DRVTYPE_DIR,	// 1541 emulation in host file system
-	DRVTYPE_D64,	// 1541 emulation in .d64 file
-	DRVTYPE_T64		// 1541 emulation in .t64 file
-};
-
-
 // SID types
 enum {
 	SIDTYPE_NONE,		// SID emulation off
@@ -71,8 +63,6 @@ public:
 	int CIACycles;			// CIA timer ticks per raster line
 	int FloppyCycles;		// Available 1541 CPU cycles per line
 	int SkipFrames;			// Draw every n-th frame
-
-	int DriveType[4];		// Type of drive 8..11
 
 	char DrivePath[4][256];	// Path for drive 8..11
 

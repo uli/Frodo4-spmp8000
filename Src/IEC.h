@@ -22,9 +22,12 @@
 #define _IEC_H
 
 
+/*
+ *  Definitions
+ */
+
 // Maximum length of file names
 const int NAMEBUF_LENGTH = 256;
-
 
 // C64 status codes
 enum {
@@ -34,7 +37,6 @@ enum {
 	ST_EOF = 0x40,			// End of file
 	ST_NOTPRESENT = 0x80	// Device not present
 };
-
 
 // 1541 error codes
 enum {
@@ -70,6 +72,11 @@ enum {
 	ERR_NOTREADY		// 74 DRIVE NOT READY
 };
 
+// Mountable file types
+enum {
+	FILE_IMAGE,			// Disk image, handled by ImageDrive
+	FILE_ARCH			// Archive file, handled by ArchDrive
+};
 
 // 1541 file types
 enum {
@@ -83,7 +90,6 @@ enum {
 
 static const char ftype_char[9] = "DSPUL   ";
 
-
 // 1541 file access modes
 enum {
 	FMODE_READ,			// Read
@@ -92,31 +98,12 @@ enum {
 	FMODE_M				// Read open file
 };
 
-
-// IEC command codes
-enum {
-	CMD_DATA = 0x60,	// Data transfer
-	CMD_CLOSE = 0xe0,	// Close channel
-	CMD_OPEN = 0xf0		// Open channel
-};
-
-
-// IEC ATN codes
-enum {
-	ATN_LISTEN = 0x20,
-	ATN_UNLISTEN = 0x30,
-	ATN_TALK = 0x40,
-	ATN_UNTALK = 0x50
-};
-
-
 // Drive LED states
 enum {
 	DRVLED_OFF,		// Inactive, LED off
 	DRVLED_ON,		// Active, LED on
 	DRVLED_ERROR	// Error, blink LED
 };
-
 
 // Information about file in disk image/archive file
 struct c64_dir_entry {
@@ -138,7 +125,6 @@ struct c64_dir_entry {
 	off_t offset;		// Offset of file in archive file
 	uint8 sa_lo, sa_hi;	// C64 start address
 };
-
 
 class Drive;
 class C64Display;
@@ -164,6 +150,8 @@ public:
 	void Release(void);
 
 private:
+	Drive *create_drive(const char *path);
+
 	uint8 listen(int device);
 	uint8 talk(int device);
 	uint8 unlisten(void);
@@ -192,7 +180,6 @@ private:
 	uint8 received_cmd;		// Received command code ($x0)
 	uint8 sec_addr;			// Received secondary address ($0x)
 };
-
 
 // Abstract superclass for individual drives
 class Drive {
@@ -246,6 +233,10 @@ private:
 };
 
 
+/*
+ *  Functions
+ */
+
 // Convert ASCII character to PETSCII character
 extern uint8 ascii2petscii(char c);
 
@@ -257,5 +248,11 @@ extern char petscii2ascii(uint8 c);
 
 // Convert PETSCII string to ASCII string
 extern void petscii2ascii(char *dest, const uint8 *src, int max);
+
+// Check whether file is a mountable disk image or archive file, return type
+extern bool IsMountableFile(const char *path, int &type);
+
+// Read directory of mountable disk image or archive file into c64_dir_entry vector
+extern bool ReadDirectory(const char *path, int type, vector<c64_dir_entry> &vec);
 
 #endif

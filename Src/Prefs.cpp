@@ -50,9 +50,6 @@ Prefs::Prefs()
 	ScalingNumerator = 2;
 	ScalingDenominator = 2;
 
-	for (int i=0; i<4; i++)
-		DriveType[i] = DRVTYPE_DIR;
-
 	strcpy(DrivePath[0], "64prgs");
 	strcpy(DrivePath[1], "");
 	strcpy(DrivePath[2], "");
@@ -106,10 +103,6 @@ bool Prefs::operator==(const Prefs &rhs) const
 		&& LatencyAvg == rhs.LatencyAvg
 		&& ScalingNumerator == rhs.ScalingNumerator
 		&& ScalingDenominator == rhs.ScalingNumerator
-		&& DriveType[0] == rhs.DriveType[0]
-		&& DriveType[1] == rhs.DriveType[1]
-		&& DriveType[2] == rhs.DriveType[2]
-		&& DriveType[3] == rhs.DriveType[3]
 		&& strcmp(DrivePath[0], rhs.DrivePath[0]) == 0
 		&& strcmp(DrivePath[1], rhs.DrivePath[1]) == 0
 		&& strcmp(DrivePath[2], rhs.DrivePath[2]) == 0
@@ -165,10 +158,6 @@ void Prefs::Check(void)
 
 	if (DisplayType < DISPTYPE_WINDOW || DisplayType > DISPTYPE_SCREEN)
 		DisplayType = DISPTYPE_WINDOW;
-
-	for (int i=0; i<4; i++)
-		if (DriveType[i] < DRVTYPE_DIR || DriveType[i] > DRVTYPE_T64)
-			DriveType[i] = DRVTYPE_DIR;
 }
 
 
@@ -204,34 +193,6 @@ void Prefs::Load(char *filename)
 					ScalingNumerator = atoi(value);
 				else if (!strcmp(keyword, "ScalingDenominator"))
 					ScalingDenominator = atoi(value);
-				else if (!strcmp(keyword, "DriveType8"))
-					if (!strcmp(value, "DIR"))
-						DriveType[0] = DRVTYPE_DIR;
-					else if (!strcmp(value, "D64"))
-						DriveType[0] = DRVTYPE_D64;
-					else
-						DriveType[0] = DRVTYPE_T64;
-				else if (!strcmp(keyword, "DriveType9"))
-					if (!strcmp(value, "DIR"))
-						DriveType[1] = DRVTYPE_DIR;
-					else if (!strcmp(value, "D64"))
-						DriveType[1] = DRVTYPE_D64;
-					else
-						DriveType[1] = DRVTYPE_T64;
-				else if (!strcmp(keyword, "DriveType10"))
-					if (!strcmp(value, "DIR"))
-						DriveType[2] = DRVTYPE_DIR;
-					else if (!strcmp(value, "D64"))
-						DriveType[2] = DRVTYPE_D64;
-					else
-						DriveType[2] = DRVTYPE_T64;
-				else if (!strcmp(keyword, "DriveType11"))
-					if (!strcmp(value, "DIR"))
-						DriveType[3] = DRVTYPE_DIR;
-					else if (!strcmp(value, "D64"))
-						DriveType[3] = DRVTYPE_D64;
-					else
-						DriveType[3] = DRVTYPE_T64;
 				else if (!strcmp(keyword, "DrivePath8"))
 					strcpy(DrivePath[0], value);
 				else if (!strcmp(keyword, "DrivePath9"))
@@ -334,21 +295,8 @@ bool Prefs::Save(char *filename)
 		fprintf(file, "LatencyAvg = %d\n", LatencyAvg);
 		fprintf(file, "ScalingNumerator = %d\n", ScalingNumerator);
 		fprintf(file, "ScalingDenominator = %d\n", ScalingDenominator);
-		for (int i=0; i<4; i++) {
-			fprintf(file, "DriveType%d = ", i+8);
-			switch (DriveType[i]) {
-				case DRVTYPE_DIR:
-					fprintf(file, "DIR\n");
-					break;
-				case DRVTYPE_D64:
-					fprintf(file, "D64\n");
-					break;
-				case DRVTYPE_T64:
-					fprintf(file, "T64\n");
-					break;
-			}
+		for (int i=0; i<4; i++)
 			fprintf(file, "DrivePath%d = %s\n", i+8, DrivePath[i]);
-		}
 		fprintf(file, "ViewPort = %s\n", ViewPort);
 		fprintf(file, "DisplayMode = %s\n", DisplayMode);
 		fprintf(file, "SIDType = ");

@@ -137,11 +137,6 @@ static void set_values(void)
 	GT_SetGadgetAttrs(PrefsGadgets[GDX_DrivePath10], PrefsWnd, NULL, GTST_String, (ULONG)prefs->DrivePath[2], TAG_DONE);
 	GT_SetGadgetAttrs(PrefsGadgets[GDX_DrivePath11], PrefsWnd, NULL, GTST_String, (ULONG)prefs->DrivePath[3], TAG_DONE);
 
-	GT_SetGadgetAttrs(PrefsGadgets[GDX_DriveType8], PrefsWnd, NULL, GTCY_Active, prefs->DriveType[0], TAG_DONE);
-	GT_SetGadgetAttrs(PrefsGadgets[GDX_DriveType9], PrefsWnd, NULL, GTCY_Active, prefs->DriveType[1], TAG_DONE);
-	GT_SetGadgetAttrs(PrefsGadgets[GDX_DriveType10], PrefsWnd, NULL, GTCY_Active, prefs->DriveType[2], TAG_DONE);
-	GT_SetGadgetAttrs(PrefsGadgets[GDX_DriveType11], PrefsWnd, NULL, GTCY_Active, prefs->DriveType[3], TAG_DONE);
-
 	GT_SetGadgetAttrs(PrefsGadgets[GDX_MapSlash], PrefsWnd, NULL, GTCB_Checked, prefs->MapSlash, TAG_DONE);
 	GT_SetGadgetAttrs(PrefsGadgets[GDX_Emul1541Proc], PrefsWnd, NULL, GTCB_Checked, prefs->Emul1541Proc, TAG_DONE);
 
@@ -248,26 +243,6 @@ int REUSizeClicked(void)
 	prefs->REUSize = PrefsMsg.Code;
 }
 
-int DriveType8Clicked(void)
-{
-	prefs->DriveType[0] = PrefsMsg.Code;
-}
-
-int DriveType9Clicked(void)
-{
-	prefs->DriveType[1] = PrefsMsg.Code;
-}
-
-int DriveType10Clicked(void)
-{
-	prefs->DriveType[2] = PrefsMsg.Code;
-}
-
-int DriveType11Clicked(void)
-{
-	prefs->DriveType[3] = PrefsMsg.Code;
-}
-
 void get_drive(int i)
 {
 	bool result = FALSE;
@@ -295,24 +270,14 @@ void get_drive(int i)
 		strncpy(file, s, 255);
 		*s = 0;
 
-		if (prefs->DriveType[i] == DRVTYPE_D64)
-			result = AslRequestTags(drive_req,
-				ASLFR_TitleText, (ULONG)"Frodo: Select disk image file",
-				ASLFR_DrawersOnly, FALSE,
-				ASLFR_DoPatterns, TRUE,
-				ASLFR_InitialPattern, (ULONG)"#?.(d64|x64)",
-				ASLFR_InitialDrawer, (ULONG)dir,
-				ASLFR_InitialFile, (ULONG)file,
-				TAG_DONE);
-		else
-			result = AslRequestTags(drive_req,
-				ASLFR_TitleText, (ULONG)"Frodo: Select archive file",
-				ASLFR_DrawersOnly, FALSE,
-				ASLFR_DoPatterns, TRUE,
-				ASLFR_InitialPattern, (ULONG)"#?.(t64|LNX)",
-				ASLFR_InitialDrawer, (ULONG)dir,
-				ASLFR_InitialFile, (ULONG)file,
-				TAG_DONE);
+		result = AslRequestTags(drive_req,
+			ASLFR_TitleText, (ULONG)"Frodo: Select disk image or archive file",
+			ASLFR_DrawersOnly, FALSE,
+			ASLFR_DoPatterns, TRUE,
+			ASLFR_InitialPattern, (ULONG)"#?.(d64|x64|t64|LNX|P00)",
+			ASLFR_InitialDrawer, (ULONG)dir,
+			ASLFR_InitialFile, (ULONG)file,
+			TAG_DONE);
 	}
 
 	if (result) {

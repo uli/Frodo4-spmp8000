@@ -97,11 +97,6 @@ static void set_values()
 	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(glade_xml_get_widget(xml, "emul1541_proc")), prefs->Emul1541Proc);
 	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(glade_xml_get_widget(xml, "map_slash")), prefs->MapSlash);
 
-	gtk_option_menu_set_history(GTK_OPTION_MENU(glade_xml_get_widget(xml, "drive8_type")), prefs->DriveType[0]);
-	gtk_option_menu_set_history(GTK_OPTION_MENU(glade_xml_get_widget(xml, "drive9_type")), prefs->DriveType[1]);
-	gtk_option_menu_set_history(GTK_OPTION_MENU(glade_xml_get_widget(xml, "drive10_type")), prefs->DriveType[2]);
-	gtk_option_menu_set_history(GTK_OPTION_MENU(glade_xml_get_widget(xml, "drive11_type")), prefs->DriveType[3]);
-
 	gtk_entry_set_text(GTK_ENTRY(gnome_file_entry_gtk_entry(GNOME_FILE_ENTRY(glade_xml_get_widget(xml, "drive8_path")))), prefs->DrivePath[0]);
 	gtk_entry_set_text(GTK_ENTRY(gnome_file_entry_gtk_entry(GNOME_FILE_ENTRY(glade_xml_get_widget(xml, "drive9_path")))), prefs->DrivePath[1]);
 	gtk_entry_set_text(GTK_ENTRY(gnome_file_entry_gtk_entry(GNOME_FILE_ENTRY(glade_xml_get_widget(xml, "drive10_path")))), prefs->DrivePath[2]);
@@ -155,11 +150,6 @@ static void get_values()
 {
 	prefs->Emul1541Proc = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(glade_xml_get_widget(xml, "emul1541_proc")));
 	prefs->MapSlash = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(glade_xml_get_widget(xml, "map_slash")));
-
-	prefs->DriveType[0] = gtk_option_menu_get_history(GTK_OPTION_MENU(glade_xml_get_widget(xml, "drive8_type")));
-	prefs->DriveType[1] = gtk_option_menu_get_history(GTK_OPTION_MENU(glade_xml_get_widget(xml, "drive9_type")));
-	prefs->DriveType[2] = gtk_option_menu_get_history(GTK_OPTION_MENU(glade_xml_get_widget(xml, "drive10_type")));
-	prefs->DriveType[3] = gtk_option_menu_get_history(GTK_OPTION_MENU(glade_xml_get_widget(xml, "drive11_type")));
 
 	get_drive_path(0, "drive8_path");
 	get_drive_path(1, "drive9_path");
