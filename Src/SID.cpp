@@ -23,7 +23,6 @@
  * ------------------
  *
  *  - Lots of empirically determined constants in the filter calculations
- *  - Voice 3 cannot be muted
  */
 
 #include "sysdeps.h"
@@ -349,6 +348,7 @@ struct DRVoice {
 					// The following bit is set for the modulating
 					// voice, not for the modulated one (as the SID bits)
 	bool sync;		// Sync modulation bit
+	bool mute;		// Voice muted (voice 3 only)
 };
 
 // Renderer class
@@ -379,7 +379,6 @@ private:
 
 	bool ready;						// Flag: Renderer has initialized and is ready
 	uint8 volume;					// Master volume
-	bool v3_mute;					// Voice 3 muted
 
 	static uint16 TriTable[0x1000*2];	// Tables for certain waveforms
 	static const uint16 TriSawTable[0x100];
@@ -451,13 +450,13 @@ private:
 	int fd;
 	audio_info status;
 	uint_t sent_samples,delta_samples;
-	WORD *sound_calc_buf;
+	int16 *sound_calc_buf;
 #endif
 
 #ifdef __hpux
 	int fd;
 	audio_status status;
-	int16 * sound_calc_buf;
+	int16 *sound_calc_buf;
 	int linecnt;
 #endif
 
@@ -877,7 +876,6 @@ DigitalRenderer::DigitalRenderer()
 void DigitalRenderer::Reset(void)
 {
 	volume = 0;
-	v3_mute = false;
 
 	for (int v=0; v<3; v++) {
 		voice[v].wave = WAVE_NONE;
@@ -887,7 +885,7 @@ void DigitalRenderer::Reset(void)
 		voice[v].eg_level = voice[v].s_level = 0;
 		voice[v].a_add = voice[v].d_sub = voice[v].r_sub = EGTable[0];
 		voice[v].gate = voice[v].ring = voice[v].test = false;
-		voice[v].filter = voice[v].sync = false;
+		voice[v].filter = voice[v].sync = voice[v].mute = false;
 	}
 
 	f_type = FILT_NONE;
@@ -966,7 +964,7 @@ void DigitalRenderer::WriteRegister(uint16 adr, uint8 byte)
 			voice[v].gate = byte & 1;
 			voice[v].mod_by->sync = byte & 2;
 			voice[v].ring = byte & 4;
-			if ((voice[v].test = byte & 8))
+			if ((voice[v].test = byte & 8) != 0)
 				voice[v].count = 0;
 			break;
 
@@ -1005,7 +1003,7 @@ void DigitalRenderer::WriteRegister(uint16 adr, uint8 byte)
 
 		case 24:
 			volume = byte & 0xf;
-			v3_mute = byte & 0x80;
+			voice[2].mute = byte & 0x80;
 			if (((byte >> 4) & 7) != f_type) {
 				f_type = (byte >> 4) & 7;
 #ifdef USE_FIXPOINT_MATHS
@@ -1255,6 +1253,8 @@ void DigitalRenderer::calc_buffer(int16 *buf, long count)
 			envelope = (v->eg_level * master_volume) >> 20;
 
 			// Waveform generator
+			if (v->mute)
+				continue;
 			uint16 output;
 
 			if (!v->test)
