@@ -404,7 +404,6 @@ int PrefsSave(void)
 {
 	get_values();
 	prefs->Save(path);
-
 }
 
 int PrefsOK(void)
