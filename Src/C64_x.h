@@ -95,6 +95,27 @@ int usleep(unsigned long int microSeconds)
 }
 #endif
 
+#ifdef __linux__
+// select() timing is much more accurate under Linux
+static void Delay_usec(unsigned long usec)
+{
+	int was_error;
+	struct timeval tv;
+
+	tv.tv_sec = 0;
+	tv.tv_usec = usec;
+	do {
+		errno = 0;
+		was_error = select(0, NULL, NULL, NULL, &tv);
+	} while (was_error && (errno == EINTR));
+}
+#else
+static void Delay_usec(unsigned long usec)
+{
+	usleep(usec);
+}
+#endif
+
 
 /*
  *  Constructor, system-dependent things
@@ -247,7 +268,7 @@ void C64::VBlank(bool draw_frame)
 
 		// Limit speed to 100% if desired
 		if ((speed_index > 100) && ThePrefs.LimitSpeed) {
-			usleep((unsigned long)(ThePrefs.SkipFrames * 20000 - elapsed_time));
+			Delay_usec((unsigned long)(ThePrefs.SkipFrames * 20000 - elapsed_time));
 			speed_index = 100;
 		}
 
