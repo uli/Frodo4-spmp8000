@@ -1396,6 +1396,10 @@ void MOS6581::open_close_renderer(int old_type, int new_type)
 	else if (new_type == SIDTYPE_SIDCARD)
 		the_renderer = new SIDCardRenderer();
 #endif
+#ifdef __linux__
+	else if (new_type == SIDTYPE_SIDCARD)
+		the_renderer = new CatweaselRenderer();
+#endif
 	else
 		the_renderer = NULL;
 
