@@ -55,7 +55,7 @@ static bool match(const char *p, const char *n);
  *  Constructor: Prepare emulation
  */
 
-FSDrive::FSDrive(IEC *iec, char *path) : Drive(iec)
+FSDrive::FSDrive(IEC *iec, const char *path) : Drive(iec)
 {
 	strcpy(orig_dir_path, path);
 	dir_path[0] = 0;
