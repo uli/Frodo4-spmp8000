@@ -21,8 +21,6 @@ AC_AIX
 AC_ISC_POSIX
 
 dnl Checks for libraries.
-HAVE_BEBOX=no
-AC_CHECK_LIB(amiga, OpenLibrary, HAVE_AMIGA_LIB=yes, HAVE_AMIGA_LIB=no)
 AC_CHECK_LIB(vga, vga_setmode, HAVE_SVGA_LIB=yes, HAVE_SVGA_LIB=no)
 AM_PATH_SDL(1.2.0, HAVE_SDL=yes, HAVE_SDL=no)
 
@@ -59,13 +57,7 @@ AC_ARG_ENABLE(kbd-lang-de,[  --enable-kbd-lang-de    Use german keyboard layout]
 AC_ARG_ENABLE(kbd-lang-us,[  --enable-kbd-lang-us    Use american keyboard layout],[KBD_LANG=0],[])
 
 AC_MSG_CHECKING(which target to use)
-if [[ x"$HAVE_BEBOX" = "xyes" ]]; then
-  AC_MSG_RESULT([BeBox])
-  TARGET=be
-elif [[ x"$HAVE_AMIGA_LIB" = "xyes" ]]; then
-  AC_MSG_RESULT([AmigaOS])
-  TARGET=amigaos
-elif [[ x"$no_x" = "xyes" ]]; then
+if [[ x"$no_x" = "xyes" ]]; then
   if [[ x"$HAVE_SVGA_LIB" = "xyes" ]]; then
     AC_MSG_RESULT([SVGAlib])
     TARGET=svgalib
