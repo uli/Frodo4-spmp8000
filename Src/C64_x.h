@@ -103,9 +103,10 @@ int usleep(unsigned long int microSeconds)
 void C64::c64_ctor1(void)
 {
 	// Initialize joystick variables
-	joyfd[0] = joyfd[1] = -1;
-	joy_minx = joy_miny = 32767;
-	joy_maxx = joy_maxy = -32768;
+	joy_minx[0] = joy_miny[0] = 32767;
+	joy_maxx[0] = joy_maxy[0] = -32768;
+	joy_minx[1] = joy_miny[1] = 32767;
+	joy_maxx[1] = joy_maxy[1] = -32768;
 
 	// we need to create a potential GUI subprocess here, because we don't want
 	// it to inherit file-descriptors (such as for the audio-device and alike..)
@@ -254,88 +255,6 @@ void C64::VBlank(bool draw_frame)
 
 		TheDisplay->Speedometer((int)speed_index);
 	}
-}
-
-
-/*
- *  Open/close joystick drivers given old and new state of
- *  joystick preferences
- */
-
-void C64::open_close_joysticks(int oldjoy1, int oldjoy2, int newjoy1, int newjoy2)
-{
-#ifdef HAVE_LINUX_JOYSTICK_H
-	if (oldjoy1 != newjoy1) {
-		joy_minx = joy_miny = 32767;	// Reset calibration
-		joy_maxx = joy_maxy = -32768;
-		if (newjoy1) {
-			joyfd[0] = open("/dev/js0", O_RDONLY);
-			if (joyfd[0] < 0)
-				fprintf(stderr, "Couldn't open joystick 1\n");
-		} else {
-			close(joyfd[0]);
-			joyfd[0] = -1;
-		}
-	}
-
-	if (oldjoy2 != newjoy2) {
-		joy_minx = joy_miny = 32767;	// Reset calibration
-		joy_maxx = joy_maxy = -32768;
-		if (newjoy2) {
-			joyfd[1] = open("/dev/js1", O_RDONLY);
-			if (joyfd[1] < 0)
-				fprintf(stderr, "Couldn't open joystick 2\n");
-		} else {
-			close(joyfd[1]);
-			joyfd[1] = -1;
-		}
-	}
-#endif
-}
-
-
-/*
- *  Poll joystick port, return CIA mask
- */
-
-uint8 C64::poll_joystick(int port)
-{
-#ifdef HAVE_LINUX_JOYSTICK_H
-	JS_DATA_TYPE js;
-	uint8 j = 0xff;
-
-	if (joyfd[port] >= 0) {
-		if (read(joyfd[port], &js, JS_RETURN) == JS_RETURN) {
-			if (js.x > joy_maxx)
-				joy_maxx = js.x;
-			if (js.x < joy_minx)
-				joy_minx = js.x;
-			if (js.y > joy_maxy)
-				joy_maxy = js.y;
-			if (js.y < joy_miny)
-				joy_miny = js.y;
-
-			if (joy_maxx-joy_minx < 100 || joy_maxy-joy_miny < 100)
-				return 0xff;
-
-			if (js.x < (joy_minx + (joy_maxx-joy_minx)/3))
-				j &= 0xfb;							// Left
-			else if (js.x > (joy_minx + 2*(joy_maxx-joy_minx)/3))
-				j &= 0xf7;							// Right
-
-			if (js.y < (joy_miny + (joy_maxy-joy_miny)/3))
-				j &= 0xfe;							// Up
-			else if (js.y > (joy_miny + 2*(joy_maxy-joy_miny)/3))
-				j &= 0xfd;							// Down
-
-			if (js.buttons & 1)
-				j &= 0xef;							// Button
-		}
-	}
-	return j;
-#else
-	return 0xff;
-#endif
 }
 
 

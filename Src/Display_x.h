@@ -775,6 +775,26 @@ bool C64Display::NumLock(void)
 
 
 /*
+ *  Open/close joystick drivers given old and new state of
+ *  joystick preferences
+ */
+
+void C64::open_close_joysticks(int oldjoy1, int oldjoy2, int newjoy1, int newjoy2)
+{
+}
+
+
+/*
+ *  Poll joystick port, return CIA mask
+ */
+
+uint8 C64::poll_joystick(int port)
+{
+	return 0xff;
+}
+
+
+/*
  *  Allocate C64 colors
  */
 

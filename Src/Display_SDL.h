@@ -37,6 +37,9 @@ static C64Display *c64_disp;
 static struct sigaction pulse_sa;
 static itimerval pulse_tv;
 
+// SDL joysticks
+static SDL_Joystick *joy[2] = {NULL, NULL};
+
 // Colors for speedometer/drive LEDs
 enum {
 	black = 0,
@@ -73,7 +76,7 @@ enum {
 int init_graphics(void)
 {
 	// Init SDL
-	if (SDL_Init(SDL_INIT_VIDEO) < 0) {
+	if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_JOYSTICK) < 0) {
 		fprintf(stderr, "Couldn't initialize SDL (%s)\n", SDL_GetError());
 		return 0;
 	}
@@ -488,6 +491,80 @@ void C64Display::PollKeyboard(uint8 *key_matrix, uint8 *rev_matrix, uint8 *joyst
 bool C64Display::NumLock(void)
 {
 	return num_locked;
+}
+
+
+/*
+ *  Open/close joystick drivers given old and new state of
+ *  joystick preferences
+ */
+
+void C64::open_close_joystick(int port, int oldjoy, int newjoy)
+{
+	if (oldjoy != newjoy) {
+		joy_minx[port] = joy_miny[port] = 32767;	// Reset calibration
+		joy_maxx[port] = joy_maxy[port] = -32768;
+		if (newjoy) {
+			joy[port] = SDL_JoystickOpen(newjoy - 1);
+			if (joy[port] == NULL)
+				fprintf(stderr, "Couldn't open joystick %d\n", port + 1);
+		} else {
+			if (joy[port]) {
+				SDL_JoystickClose(joy[port]);
+				joy[port] = NULL;
+			}
+		}
+	}
+}
+
+void C64::open_close_joysticks(int oldjoy1, int oldjoy2, int newjoy1, int newjoy2)
+{
+	open_close_joystick(0, oldjoy1, newjoy1);
+	open_close_joystick(1, oldjoy2, newjoy2);
+}
+
+
+/*
+ *  Poll joystick port, return CIA mask
+ */
+
+uint8 C64::poll_joystick(int port)
+{
+	uint8 j = 0xff;
+
+	if (port == 0 && (joy[0] || joy[1]))
+		SDL_JoystickUpdate();
+
+	if (joy[port]) {
+		int x = SDL_JoystickGetAxis(joy[port], 0), y = SDL_JoystickGetAxis(joy[port], 1);
+
+		if (x > joy_maxx[port])
+			joy_maxx[port] = x;
+		if (x < joy_minx[port])
+			joy_minx[port] = x;
+		if (y > joy_maxy[port])
+			joy_maxy[port] = y;
+		if (y < joy_miny[port])
+			joy_miny[port] = y;
+
+		if (joy_maxx[port] - joy_minx[port] < 100 || joy_maxy[port] - joy_miny[port] < 100)
+			return 0xff;
+
+		if (x < (joy_minx[port] + (joy_maxx[port]-joy_minx[port])/3))
+			j &= 0xfb;							// Left
+		else if (x > (joy_minx[port] + 2*(joy_maxx[port]-joy_minx[port])/3))
+			j &= 0xf7;							// Right
+
+		if (y < (joy_miny[port] + (joy_maxy[port]-joy_miny[port])/3))
+			j &= 0xfe;							// Up
+		else if (y > (joy_miny[port] + 2*(joy_maxy[port]-joy_miny[port])/3))
+			j &= 0xfd;							// Down
+
+		if (SDL_JoystickGetButton(joy[port], 0))
+			j &= 0xef;							// Button
+	}
+
+	return j;
 }
 
 

@@ -29,7 +29,7 @@ AC_PATH_XTRA
 AC_HEADER_DIRENT
 AC_HEADER_STDC
 AC_CHECK_HEADERS(unistd.h fcntl.h sys/time.h sys/types.h utime.h string.h strings.h values.h ncurses.h)
-AC_CHECK_HEADERS(sys/vfs.h sys/mount.h sys/select.h sys/param.h sys/statfs.h sys/statvfs.h sys/stat.h linux/joystick.h)
+AC_CHECK_HEADERS(sys/vfs.h sys/mount.h sys/select.h sys/param.h sys/statfs.h sys/statvfs.h sys/stat.h)
 
 AC_CHECK_SIZEOF(char)
 AC_CHECK_SIZEOF(short)

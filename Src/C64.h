@@ -126,7 +126,7 @@ private:
 	bool quit_thyself;		// Emulation thread shall quit
 	bool have_a_break;		// Emulation thread shall pause
 
-	int joy_minx, joy_maxx, joy_miny, joy_maxy; // For dynamic joystick calibration
+	int joy_minx[2], joy_maxx[2], joy_miny[2], joy_maxy[2]; // For dynamic joystick calibration
 	uint8 joykey;			// Joystick keyboard emulation mask value
 
 	uint8 orig_kernal_1d84,	// Original contents of kernal locations $1d84 and $1d85
@@ -161,7 +161,7 @@ private:
 #endif
 
 #ifdef __unix
-	int joyfd[2];			// File descriptors for joysticks
+	void open_close_joystick(int port, int oldjoy, int newjoy);
 	double speed_index;
 public:
 	CmdPipe *gui;

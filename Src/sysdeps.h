@@ -117,10 +117,6 @@ extern "C"
 #define BROKEN_OS_PROBABLY_AIX
 #endif
 
-#ifdef HAVE_LINUX_JOYSTICK_H
-#include <linux/joystick.h>
-#endif
-
 #ifdef __NeXT__
 #define S_IRUSR S_IREAD
 #define S_IWUSR S_IWRITE
