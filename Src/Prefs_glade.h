@@ -226,7 +226,9 @@ extern "C" void on_quit_clicked(GtkButton *button, gpointer user_data)
 
 extern "C" void on_about_activate(GtkMenuItem *menuitem, gpointer user_data)
 {
-	gtk_widget_show(glade_xml_get_widget(xml, "about_win"));
+	GladeXML *about_xml = glade_xml_new(DATADIR "Frodo.glade", "about_win", NULL);
+	if (about_xml)
+		gtk_widget_show(glade_xml_get_widget(about_xml, "about_win"));
 }
 
 extern "C" void on_emul1541_proc_toggled(GtkToggleButton *button, gpointer user_data)
