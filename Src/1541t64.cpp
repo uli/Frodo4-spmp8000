@@ -545,7 +545,12 @@ void ArchDrive::Reset(void)
 
 static bool is_t64_header(const uint8 *header)
 {
-	return memcmp(header, "C64S tape file", 14) == 0;
+	if (memcmp(header, "C64S tape file", 14) == 0
+	 || memcmp(header, "C64 tape image", 14) == 0
+	 || memcmp(header, "C64S tape image", 15) == 0)
+		return true;
+	else
+		return false;
 }
 
 static bool is_lynx_header(const uint8 *header)
