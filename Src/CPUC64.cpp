@@ -781,7 +781,7 @@ handle_int:
 		}
 	}
 
-#include "CPU_emulline.i"
+#include "CPU_emulline.h"
 
 		// Extension opcode
 		case 0xf2:
