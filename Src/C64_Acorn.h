@@ -1,5 +1,5 @@
 /*
- *  C64_Acorn.h - RISC OS specific stuff concerning the actual emulator
+ *  C64_Acorn.h - Put the pieces together, RISC OS specific stuff
  *
  *  Frodo (C) 1994-1997,2002 Christian Bauer
  *
