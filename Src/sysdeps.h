@@ -21,15 +21,15 @@
 
 #include "sysconfig.h"
 
-extern "C"
-{
-  
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
 #include <ctype.h>
 #include <errno.h>
 #include <signal.h>
+
+#include <vector>
+using std::vector;
 
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
@@ -186,5 +186,3 @@ typedef long int32;
 #else
 #include <support/SupportDefs.h>
 #endif	// __BEOS__
-
-}
