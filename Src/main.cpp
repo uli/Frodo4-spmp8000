@@ -40,72 +40,47 @@ char AppDirPath[1024];	// Path of application directory
 #define BASIC_ROM_FILE	"FrodoRsrc:Basic_ROM"
 #define KERNAL_ROM_FILE	"FrodoRsrc:Kernal_ROM"
 #define CHAR_ROM_FILE	"FrodoRsrc:Char_ROM"
-#define FLOPPY_ROM_FILE	"FrodoRsrc:1541_ROM"
+#define DRIVE_ROM_FILE	"FrodoRsrc:1541_ROM"
 #else
 #define BASIC_ROM_FILE DATADIR "Basic ROM"
 #define KERNAL_ROM_FILE DATADIR "Kernal ROM"
 #define CHAR_ROM_FILE DATADIR "Char ROM"
-#define FLOPPY_ROM_FILE DATADIR "1541 ROM"
+#define DRIVE_ROM_FILE DATADIR "1541 ROM"
 #endif
+
+
+// Builtin ROMs
+#include "Basic_ROM.h"
+#include "Kernal_ROM.h"
+#include "Char_ROM.h"
+#include "1541_ROM.h"
 
 
 /*
  *  Load C64 ROM files
  */
 
-bool Frodo::load_rom_files(void)
+void Frodo::load_rom(const char *which, const char *path, uint8 *where, size_t size, const uint8 *builtin)
 {
-	FILE *file;
-
-	// Load Basic ROM
-	if ((file = fopen(BASIC_ROM_FILE, "rb")) != NULL) {
-		if (fread(TheC64->Basic, 1, 0x2000, file) != 0x2000) {
-			ShowRequester("Can't read 'Basic ROM'.", "Quit");
-			return false;
-		}
-		fclose(file);
-	} else {
-		ShowRequester("Can't find 'Basic ROM'.", "Quit");
-		return false;
+	FILE *f = fopen(path, "rb");
+	if (f) {
+		size_t actual = fread(where, 1, size, f);
+		fclose(f);
+		if (actual == size)
+			return;
 	}
 
-	// Load Kernal ROM
-	if ((file = fopen(KERNAL_ROM_FILE, "rb")) != NULL) {
-		if (fread(TheC64->Kernal, 1, 0x2000, file) != 0x2000) {
-			ShowRequester("Can't read 'Kernal ROM'.", "Quit");
-			return false;
-		}
-		fclose(file);
-	} else {
-		ShowRequester("Can't find 'Kernal ROM'.", "Quit");
-		return false;
-	}
+	// Use builtin ROM
+	printf("%s ROM file (%s) not readable, using builtin.\n", which, path);
+	memcpy(where, builtin, size);
+}
 
-	// Load Char ROM
-	if ((file = fopen(CHAR_ROM_FILE, "rb")) != NULL) {
-		if (fread(TheC64->Char, 1, 0x1000, file) != 0x1000) {
-			ShowRequester("Can't read 'Char ROM'.", "Quit");
-			return false;
-		}
-		fclose(file);
-	} else {
-		ShowRequester("Can't find 'Char ROM'.", "Quit");
-		return false;
-	}
-
-	// Load 1541 ROM
-	if ((file = fopen(FLOPPY_ROM_FILE, "rb")) != NULL) {
-		if (fread(TheC64->ROM1541, 1, 0x4000, file) != 0x4000) {
-			ShowRequester("Can't read '1541 ROM'.", "Quit");
-			return false;
-		}
-		fclose(file);
-	} else {
-		ShowRequester("Can't find '1541 ROM'.", "Quit");
-		return false;
-	}
-
-	return true;
+void Frodo::load_rom_files()
+{
+	load_rom("Basic", BASIC_ROM_FILE, TheC64->Basic, BASIC_ROM_SIZE, builtin_basic_rom);
+	load_rom("Kernal", KERNAL_ROM_FILE, TheC64->Kernal, KERNAL_ROM_SIZE, builtin_kernal_rom);
+	load_rom("Char", CHAR_ROM_FILE, TheC64->Char, CHAR_ROM_SIZE, builtin_char_rom);
+	load_rom("1541", DRIVE_ROM_FILE, TheC64->ROM1541, DRIVE_ROM_SIZE, builtin_drive_rom);
 }
 
 

@@ -74,7 +74,8 @@ public:
 	C64 *TheC64;
 
 private:
-	bool load_rom_files(void);
+	void load_rom(const char *which, const char *path, uint8 *where, size_t size, const uint8 *builtin);
+	void load_rom_files();
 
 	char prefs_path[1024];	// Pathname of current preferences file
 	bool prefs_showing;		// true: Preferences editor is on screen
@@ -103,7 +104,8 @@ public:
 	C64 *TheC64;
 
 private:
-	bool load_rom_files(void);
+	void load_rom(const char *which, const char *path, uint8 *where, size_t size, const uint8 *builtin);
+	void load_rom_files();
 
 	char prefs_path[256];	// Pathname of current preferences file
 };
@@ -132,7 +134,8 @@ public:
 	C64 *TheC64;
 
 private:
-	bool load_rom_files(void);
+	void load_rom(const char *which, const char *path, uint8 *where, size_t size, const uint8 *builtin);
+	void load_rom_files();
 
 	static char prefs_path[256];	// Pathname of current preferences file
 };
@@ -154,7 +157,8 @@ public:
 	C64 *TheC64;
 
 private:
-	bool load_rom_files(void);
+	void load_rom(const char *which, const char *path, uint8 *where, size_t size, const uint8 *builtin);
+	void load_rom_files();
 };
 
 #endif
@@ -178,7 +182,8 @@ public:
 	char prefs_path[256];	// Pathname of current preferences file
 
 private:
-	bool load_rom_files();
+	void load_rom(const char *which, const char *path, uint8 *where, size_t size, const uint8 *builtin);
+	void load_rom_files();
 };
 
 // Global variables
@@ -224,15 +229,16 @@ inline void Debug(const char *format, ...)
 
 class Frodo
 {
-  public:
-  Frodo(void);
-  ~Frodo(void);
-  void ReadyToRun(void);
+public:
+	Frodo();
+	~Frodo();
+	void ReadyToRun(void);
 
-  C64 *TheC64;
+	C64 *TheC64;
 
-  private:
-  bool load_rom_files(void);
+private:
+	void load_rom(const char *which, const char *path, uint8 *where, size_t size, const uint8 *builtin);
+	void load_rom_files();
 };
 
 #endif

@@ -32,6 +32,7 @@
 #include "1541d64.h"
 #include "IEC.h"
 #include "Prefs.h"
+#include "C64.h"
 
 
 // Channel modes (IRC users listen up :-)
@@ -83,7 +84,7 @@ D64Drive::D64Drive(IEC *iec, char *filepath) : Drive(iec)
 	if (the_file != NULL) {
 
 		// Allocate 1541 RAM
-		ram = new uint8[0x800];
+		ram = new uint8[DRIVE_RAM_SIZE];
 		bam = (BAM *)(ram + 0x700);
 
 		Reset();

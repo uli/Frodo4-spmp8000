@@ -158,10 +158,7 @@ void Frodo::MessageReceived(BMessage *msg)
 			TheC64 = new C64;
 
 			// Load ROMs
-			if (!load_rom_files()) {
-				PostMessage(B_QUIT_REQUESTED);
-				return;
-			}
+			load_rom_files();
 
 			// Run the 6510
 			TheC64->Run();

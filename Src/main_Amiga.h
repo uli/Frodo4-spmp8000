@@ -155,8 +155,8 @@ void Frodo::ReadyToRun(void)
 
 		// Create and start C64
 		TheC64 = new C64;
-		if (load_rom_files())
-			TheC64->Run();
+		load_rom_files();
+		TheC64->Run();
 		delete TheC64;
 	}
 }

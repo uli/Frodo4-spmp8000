@@ -50,7 +50,6 @@ bool IsFrodoSC = false;
 
 C64::C64()
 {
-	int i,j;
 	uint8 *p;
 
 	// The thread is not yet running
@@ -65,13 +64,13 @@ C64::C64()
 	TheDisplay = new C64Display(this);
 
 	// Allocate RAM/ROM memory
-	RAM = new uint8[0x10000];
-	Basic = new uint8[0x2000];
-	Kernal = new uint8[0x2000];
-	Char = new uint8[0x1000];
-	Color = new uint8[0x0400];
-	RAM1541 = new uint8[0x0800];
-	ROM1541 = new uint8[0x4000];
+	RAM = new uint8[C64_RAM_SIZE];
+	Basic = new uint8[BASIC_ROM_SIZE];
+	Kernal = new uint8[KERNAL_ROM_SIZE];
+	Char = new uint8[CHAR_ROM_SIZE];
+	Color = new uint8[COLOR_RAM_SIZE];
+	RAM1541 = new uint8[DRIVE_RAM_SIZE];
+	ROM1541 = new uint8[DRIVE_ROM_SIZE];
 
 	// Create the chips
 	TheCPU = new MOS6510(this, RAM, Basic, Kernal, Char, Color);
@@ -87,19 +86,21 @@ C64::C64()
 	TheREU = TheCPU->TheREU = new REU(TheCPU);
 
 	// Initialize RAM with powerup pattern
-	for (i=0, p=RAM; i<512; i++) {
-		for (j=0; j<64; j++)
+	p = RAM;
+	for (unsigned i=0; i<512; i++) {
+		for (unsigned j=0; j<64; j++)
 			*p++ = 0;
-		for (j=0; j<64; j++)
+		for (unsigned j=0; j<64; j++)
 			*p++ = 0xff;
 	}
 
 	// Initialize color RAM with random values
-	for (i=0, p=Color; i<1024; i++)
+	p = Color;
+	for (unsigned i=0; i<COLOR_RAM_SIZE; i++)
 		*p++ = rand() & 0x0f;
 
 	// Clear 1541 RAM
-	memset(RAM1541, 0, 0x800);
+	memset(RAM1541, 0, DRIVE_RAM_SIZE);
 
 	// Open joystick drivers if required
 	open_close_joysticks(false, false, ThePrefs.Joystick1On, ThePrefs.Joystick2On);

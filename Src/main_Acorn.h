@@ -518,10 +518,8 @@ void Frodo::ReadyToRun(void)
 {
   ThePrefs.Load(DEFAULT_PREFS);
   TheC64 = new C64;
-  if (load_rom_files())
-  {
-    TheC64->Run();
-  }
+  load_rom_files();
+  TheC64->Run();
   delete TheC64; TheC64 = NULL;
 }
 
