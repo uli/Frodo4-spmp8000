@@ -24,6 +24,10 @@
 #include <gnome.h>
 #endif
 
+#ifdef QTOPIA
+extern "C" int main(int argc, char *argv[]);
+#include <SDL.h>
+#endif
 
 extern int init_graphics(void);
 
@@ -102,14 +106,16 @@ void Frodo::ReadyToRun(void)
 	ThePrefs.Load(prefs_path);
 
 	// Show preferences editor
-	if (ThePrefs.ShowEditor(true, prefs_path)) {
+#ifdef HAVE_GLADE
+	if (!ThePrefs.ShowEditor(true, prefs_path))
+		return;
+#endif
 
-		// Create and start C64
-		TheC64 = new C64;
-		load_rom_files();
-		TheC64->Run();
-		delete TheC64;
-	}
+	// Create and start C64
+	TheC64 = new C64;
+	load_rom_files();
+	TheC64->Run();
+	delete TheC64;
 }
 
 
