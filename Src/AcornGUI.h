@@ -276,6 +276,8 @@
 #define Icon_Prefs_PrefPath	70
 #define Icon_Prefs_Save		71
 #define Icon_Prefs_PrefSprite	72
+#define Icon_Prefs_XROMOn	75
+#define Icon_Prefs_XROMPath	76
 
 #define Icon_Conf_PollAfter	3
 #define Icon_Conf_SpeedAfter	5

@@ -2050,7 +2050,10 @@ static void view_vic_state(void)
 		else
 			fprintf(fout, "Fore   ");
 
-	fprintf(fout, "\n\nPending interrupts: ");
+	fprintf(fout, "\nSS Coll: "); dump_spr_flags(vs.mm);
+	fprintf(fout, "SD Coll: "); dump_spr_flags(vs.md);
+
+	fprintf(fout, "\nPending interrupts: ");
 	dump_vic_ints(vs.irq_flag);
 	fprintf(fout, "Enabled interrupts: ");
 	dump_vic_ints(vs.irq_mask);

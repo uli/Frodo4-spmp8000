@@ -527,6 +527,12 @@ void WIMP::ThePrefsToWindow(void)
   PrefsWindow->WriteIconNumber(Icon_Prefs_CycleBad,ThePrefs.BadLineCycles);
   PrefsWindow->WriteIconNumber(Icon_Prefs_CycleCIA,ThePrefs.CIACycles);
   PrefsWindow->WriteIconNumber(Icon_Prefs_CycleFloppy,ThePrefs.FloppyCycles);
+
+#ifdef SUPPORT_XROM
+  // XROM
+  PrefsWindow->SetIconState(Icon_Prefs_XROMOn,(ThePrefs.XPandROMOn)?IFlg_Slct:0,IFlg_Slct);
+  PrefsWindow->WriteIconText(Icon_Prefs_XROMPath,ThePrefs.XPandROMFile);
+#endif
 }
 
 
@@ -606,6 +612,12 @@ void WIMP::WindowToThePrefs(void)
   prefs->BadLineCycles	= PrefsWindow->ReadIconNumber(Icon_Prefs_CycleBad);
   prefs->CIACycles	= PrefsWindow->ReadIconNumber(Icon_Prefs_CycleCIA);
   prefs->FloppyCycles	= PrefsWindow->ReadIconNumber(Icon_Prefs_CycleFloppy);
+
+#ifdef SUPPORT_XROM
+  // XROM
+  pread_opt(XPandROMOn,XROMOn);
+  strcpy(prefs->XPandROMFile,PrefsWindow->ReadIconText(Icon_Prefs_XROMPath));
+#endif
 
   // Finally make the changes known to the system:
   the_c64->NewPrefs(prefs);
@@ -1599,7 +1611,7 @@ void WIMP::UserMessage(void)
          i = -1;	// indicator whether file is accepted
          if ((Block[5] == EmuWindow->MyHandle()) && (Block[10] == FileType_C64File)) {i=0;}
          else if ((Block[5] == EmuWindow->MyHandle()) && (Block[10] == FileType_Data)) {i=0;}
-         else if ((Block[5] == PrefsWindow->MyHandle()) && (Block[10] == FileType_Text)) {i=0;}
+         else if ((Block[5] == PrefsWindow->MyHandle()) && ((Block[10] == FileType_Text) || (Block[10] == FileType_C64File))) {i=0;}
          else if ((Block[5] == ConfigWindow->MyHandle()) && (Block[10] == FileType_Text)) {i=0;}
          if (i >= 0)
          {
@@ -1659,6 +1671,12 @@ void WIMP::UserMessage(void)
              Block[MsgB_YourRef] = Block[MsgB_MyRef]; Block[MsgB_Action] = Message_DataLoadAck;
              Wimp_SendMessage(17,Block,Block[MsgB_Sender],Block[6]);
            }
+	 	   else if ((Block[6] == Icon_Prefs_XROMPath) && (Block[10] == FileType_C64File))
+		   {
+		     PrefsWindow->WriteIconText(Icon_Prefs_XROMPath,((char*)Block)+44);
+		     Block[MsgB_YourRef] = Block[MsgB_MyRef]; Block[MsgB_Action] = Message_DataLoadAck;
+		     Wimp_SendMessage(17,Block,Block[MsgB_Sender],Block[6]);
+		   }
            else		// interpret as drive path (if dragged on one of the drive path icons)
            {
              switch (Block[6])
@@ -1667,7 +1685,7 @@ void WIMP::UserMessage(void)
                case Icon_Prefs_Dr9Path:  i = 1; break;
                case Icon_Prefs_Dr10Path: i = 2; break;
                case Icon_Prefs_Dr11Path: i = 3; break;
-               default: -1; break;
+               default: i = -1; break;
              }
              if (i >= 0) {NewDriveImage(i,Block,false);}
            }

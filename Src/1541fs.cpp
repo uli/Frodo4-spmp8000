@@ -113,16 +113,12 @@ bool FSDrive::change_dir(char *dirpath)
 #else
 	int Info[4];
 
-	if ((ReadCatalogueInfo(dirpath,Info) & 2) != 0)	// Directory or image file
-	{
-	  strcpy(dir_path, dirpath);
-	  strncpy(dir_title, dir_path, 16);
-	  return true;
-	}
-	else
-	{
-	  return false;
-	}
+	if ((ReadCatalogueInfo(dirpath,Info) & 2) != 0)	{ // Directory or image file
+		strcpy(dir_path, dirpath);
+		strncpy(dir_title, dir_path, 16);
+		return true;
+	} else
+		return false;
 #endif
 }
 
@@ -342,20 +338,15 @@ void FSDrive::find_first_file(char *name)
 	char Buffer[NAMEBUF_LENGTH];
 
 	de.offset = 0; de.buffsize = NAMEBUF_LENGTH; de.match = name;
-	do
-	{
-	  de.readno = 1;
-	  if (ReadDirName(dir_path,Buffer,&de) != NULL) {de.offset = -1;}
-	  else if (de.offset != -1)
-	  {
-	    if (match(name,Buffer))
-	    {
-	      strncpy(name, Buffer, NAMEBUF_LENGTH);
-	      return;
-	    }
-	  }
-	}
-	while (de.offset != -1);
+	do {
+		de.readno = 1;
+		if (ReadDirName(dir_path,Buffer,&de) != NULL)
+			de.offset = -1;
+		else if (de.offset != -1 && match(name,Buffer)) {
+			strncpy(name, Buffer, NAMEBUF_LENGTH);
+			return;
+		}
+	} while (de.readno > 0);
 #endif
 }
 
@@ -466,20 +457,24 @@ uint8 FSDrive::open_directory(int channel, char *filename)
 #else
 	dir_full_info di;
 	dir_env de;
+	unsigned char c;
 
 	// Much of this is very similar to the original
 	if ((filename[0] == '0') && (filename[1] == 0)) {filename++;}
+
 	// Concatenate dir_path and pattern in buffer pattern ==> read subdirs!
-	strcpy(pattern,dir_path);
-	convert_filename(filename, pattern + strlen(pattern), &filemode, &filetype, &wildflag);
+	strcpy(pattern,dir_path); i = strlen(pattern); pattern[i++] = '.'; pattern[i] = 0;
+	convert_filename(filename, pattern + i, &filemode, &filetype, &wildflag);
+	p = pattern + i; q = p;
+	do {c = *q++; if (c == '.') p = q;} while (c >= 32);
+	*(p-1) = 0;  // separate directory-path and pattern
+	if ((uint8)(*p) < 32) {*p = '*'; *(p+1) = 0;}
 
 	// We don't use tmpfile() -- problems involved!
 	DeleteFile(RO_TEMPFILE);	// first delete it, if it exists
 	if ((file[channel] = fopen(RO_TEMPFILE,"wb+")) == NULL)
-	{
-	  return(ST_OK);
-	}
-	de.offset = 0; de.buffsize = NAMEBUF_LENGTH; de.match = filename;
+		return(ST_OK);
+	de.offset = 0; de.buffsize = NAMEBUF_LENGTH; de.match = p;
 
 	// Create directory title - copied from above
 	p = &buf[8];
@@ -487,37 +482,32 @@ uint8 FSDrive::open_directory(int channel, char *filename)
 		*p++ = conv_to_64(dir_title[i], false);
 	fwrite(buf, 1, 32, file[channel]);
 
-	do
-	{
-	  de.readno = 1;
-	  if (ReadDirNameInfo(pattern,&di,&de) != NULL) {de.offset = -1;}
-	  else if (de.offset != -1)	// don't have to check for match here
-	  {
-	    memset(buf,' ',31); buf[31] = 0;	// most of this: see above
-	    p = buf; *p++ = 0x01; *p++ = 0x01;
-	    i = (di.length + 254) / 254; *p++ = i & 0xff; *p++ = (i>>8) & 0xff;
-	    p++;
-	    if (i < 10)  {*p++ = ' ';}
-	    if (i < 100) {*p++ = ' ';}
-	    strcpy(str, di.name);
-	    *p++ = '\"'; q = p;
-	    for (i=0; (i<16 && str[i]); i++)
-	    {
-	      *q++ = conv_to_64(str[i], true);
-	    }
-	    *q++ = '\"'; p += 18;
-	    if ((di.otype & 2) == 0)
-	    {
-	      *p++ = 'P'; *p++ = 'R'; *p++ = 'G';
-	    }
-	    else
-	    {
-	      *p++ = 'D'; *p++ = 'I'; *p++ = 'R';
-	    }
-	    fwrite(buf, 1, 32, file[channel]);
-	  }
-	}
-	while (de.offset != -1);
+	do {
+		de.readno = 1;
+		if (ReadDirNameInfo(pattern,&di,&de) != NULL)
+			de.offset = -1;
+		else if (de.readno > 0) {	// don't have to check for match here
+			memset(buf,' ',31); buf[31] = 0;	// most of this: see above
+			p = buf; *p++ = 0x01; *p++ = 0x01;
+			i = (di.length + 254) / 254; *p++ = i & 0xff; *p++ = (i>>8) & 0xff;
+			p++;
+			if (i < 10)
+				*p++ = ' ';
+			if (i < 100)
+				*p++ = ' ';
+			strcpy(str, di.name);
+			*p++ = '\"'; q = p;
+			for (i=0; (i<16 && str[i]); i++)
+				*q++ = conv_to_64(str[i], true);
+			*q++ = '\"'; p += 18;
+			if ((di.otype & 2) == 0) {
+				*p++ = 'P'; *p++ = 'R'; *p++ = 'G';
+			} else {
+				*p++ = 'D'; *p++ = 'I'; *p++ = 'R';
+			}
+			fwrite(buf, 1, 32, file[channel]);
+		}
+	} while (de.offset != -1);
 #endif
 
 	// Final line
@@ -721,6 +711,7 @@ uint8 FSDrive::conv_from_64(uint8 c, bool map_slash)
 #ifdef __riscos__
 		return '.';	// directory separator is '.' in RO
 	if (c == '.') {return('_');}	// convert dot to underscore
+	if (c == ' ') {return(0xa0);}	// space --> hard space
 #else
 		return '\\';
 #endif
@@ -744,6 +735,7 @@ uint8 FSDrive::conv_to_64(uint8 c, bool map_slash)
 		return '/';
 #ifdef __riscos__
 	if (c == '_') {return('.');}	// convert underscore to dot
+	if (c == 0xa0) {return(' ');}	// hard space -> space
 #endif
 	return c;
 }

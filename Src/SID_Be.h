@@ -36,8 +36,8 @@ void DigitalRenderer::init_sound(void)
 	ready = the_sub->Subscribe(the_stream) == B_NO_ERROR;
 	if (ready) {
 		the_stream->SetSamplingRate(SAMPLE_FREQ);
-		the_stream->SetStreamBuffers(SAMPLE_FREQ / CALC_FREQ * 4, 4);	// Must be called after EnterStream()
 		the_sub->EnterStream(NULL, true, this, stream_func, NULL, true);
+		the_stream->SetStreamBuffers(SAMPLE_FREQ / CALC_FREQ * 4, 4);	// Must be called after EnterStream()
 		in_stream = true;
 	}
 }

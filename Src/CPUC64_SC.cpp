@@ -276,9 +276,6 @@ inline uint8 MOS6510::read_byte_io(uint16 adr)
  *  Read a byte from the CPU's address space
  */
 
-#ifdef __i386
-inline
-#endif
 uint8 MOS6510::read_byte(uint16 adr)
 {
 	if (adr < 0xa000) {

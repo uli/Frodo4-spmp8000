@@ -150,7 +150,7 @@ static int keystate[256];
 static int f11pressed = 0, f12pressed = 0, quit = 0;
 static int joystate = 0xFF;
 static int numlock = 0;
-static UBYTE rev_matrix[8], key_matrix[8];
+static uint8 rev_matrix[8], key_matrix[8];
 
 /*
   C64 keyboard matrix:
@@ -495,14 +495,14 @@ void C64Display::Update(void)
 	return;
     
     for (y = 0; y < DISPLAY_Y; y++) {
-	vga_drawscanline(y, bufmem + hsize * y);
+	vga_drawscanline(y, (uint8 *)bufmem + hsize * y);
     }
 }
 
 
-UBYTE *C64Display::BitmapBase(void)
+uint8 *C64Display::BitmapBase(void)
 {
-       return (UBYTE *)bufmem;
+       return (uint8 *)bufmem;
 }
 
 
@@ -512,7 +512,7 @@ int C64Display::BitmapXMod(void)
 }
 
 
-void C64Display::PollKeyboard(UBYTE *CIA_key_matrix, UBYTE *CIA_rev_matrix, UBYTE *joystick)
+void C64Display::PollKeyboard(uint8 *CIA_key_matrix, uint8 *CIA_rev_matrix, uint8 *joystick)
 {
     keyboard_update();
     *joystick = joystate;
@@ -547,7 +547,7 @@ static int colorval(int v)
        return ((v & 255)*0x01010101) >> 26;
 }
 
-void C64Display::InitColors(UBYTE *colors)
+void C64Display::InitColors(uint8 *colors)
 {
        int i;
 

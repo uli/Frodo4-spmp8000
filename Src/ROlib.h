@@ -469,7 +469,7 @@ extern _kernel_oserror *OS_ReadC(char *Code);
 /* returns length of characters read; if length negative ==> terminated by escape */
 extern int OS_ReadLine(char *Buffer, int BuffSize, int minasc, int maxasc, int Echo);
 
-/* TRUE ==> escape */
+/* true ==> escape */
 extern bool OS_ReadEscapeState(void);
 
 /* File related calls */

@@ -186,7 +186,7 @@ typedef long int32;
 #else
 #error No 4 byte type, you lose.
 #endif
+#include <support/SupportDefs.h>
 #endif	// __BEOS__
 
-#define UNUSED(x) (x = x)
 }

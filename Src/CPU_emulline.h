@@ -758,12 +758,14 @@
 
 		// Jump/branch group
 		case 0x4c:	// JMP abs
-			jump(read_adr_abs());
+			adr = read_adr_abs();
+			jump(adr);
 			ENDOP(3);
 
 		case 0x6c:	// JMP (ind)
 			adr = read_adr_abs();
-			jump(read_byte(adr) | (read_byte((adr + 1) & 0xff | adr & 0xff00) << 8));
+			adr = read_byte(adr) | (read_byte((adr + 1) & 0xff | adr & 0xff00) << 8);
+			jump(adr);
 			ENDOP(5);
 
 		case 0x20:	// JSR abs
@@ -772,18 +774,21 @@
 #else
 			push_byte(pc+1 >> 8); push_byte(pc+1);
 #endif
-			jump(read_adr_abs());
+			adr = read_adr_abs();
+			jump(adr);
 			ENDOP(6);
 
 		case 0x60:	// RTS
 			adr = pop_byte();	// Split because of pop_byte ++sp side-effect
-			jump((adr | pop_byte() << 8) + 1);
+			adr = (adr | pop_byte() << 8) + 1;
+			jump(adr);
 			ENDOP(6);
 
 		case 0x40:	// RTI
 			pop_flags();
 			adr = pop_byte();	// Split because of pop_byte ++sp side-effect
-			jump(adr | pop_byte() << 8);
+			adr = adr | pop_byte() << 8;
+			jump(adr);
 			if (interrupt.intr_any && !i_flag)
 				goto handle_int;
 			ENDOP(6);
@@ -796,7 +801,8 @@
 #endif
 			push_flags(true);
 			i_flag = true;
-			jump(read_word(0xfffe));
+			adr = read_word(0xfffe);
+			jump(adr);
 			ENDOP(7);
 
 #if PC_IS_POINTER
@@ -1323,7 +1329,7 @@
 				v_flag = (tmp2 ^ a) & 0x40;
 				if ((tmp2 & 0x0f) + (tmp2 & 0x01) > 5)
 					a = a & 0xf0 | (a + 6) & 0x0f;
-				if (c_flag = ((tmp2 + (tmp2 & 0x10)) & 0x1f0) > 0x50)
+				if ((c_flag = ((tmp2 + (tmp2 & 0x10)) & 0x1f0) > 0x50) != 0)
 					a += 0x60;
 			}
 			ENDOP(2);

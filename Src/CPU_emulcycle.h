@@ -1071,7 +1071,7 @@
 				v_flag = (data ^ a) & 0x40;
 				if ((data & 0x0f) + (data & 0x01) > 5)
 					a = a & 0xf0 | (a + 6) & 0x0f;
-				if (c_flag = ((data + (data & 0x10)) & 0x1f0) > 0x50)
+				if ((c_flag = ((data + (data & 0x10)) & 0x1f0) > 0x50) != 0)
 					a += 0x60;
 			}
 			Last;

@@ -317,14 +317,14 @@ void MOS6569::ReInitColors(void)
 	// Build inverse color table.
 	uint8 xlate_colors[256];
 	memset(xlate_colors, 0, sizeof(xlate_colors));
-	for (i = 0; i < 16; i++)
+	for (i=0; i<16; i++)
 		xlate_colors[colors[i]] = i;
 
 	// Get the new colors.
 	the_display->InitColors(colors);
 
 	// Build color translation table.
-	for (i = 0; i < 256; i++)
+	for (i=0; i<256; i++)
 		xlate_colors[i] = colors[xlate_colors[i]];
 
 	// Translate all the old colors variables.
@@ -335,7 +335,7 @@ void MOS6569::ReInitColors(void)
 	b3c_color = colors[b3c];
 	mm0_color = colors[mm0];
 	mm1_color = colors[mm1];
-	for (i = 0; i < 8; i++)
+	for (i=0; i<8; i++)
 		spr_color[i] = colors[sc[i]];
 
 	// Translate the border color sample buffer.
@@ -344,8 +344,8 @@ void MOS6569::ReInitColors(void)
 
 	// Translate the chunky buffer.
 	uint8 *scanline = the_display->BitmapBase();
-	for (int y = 0; y < DISPLAY_Y; y++) {
-		for (int x = 0; x < DISPLAY_X; x++)
+	for (int y=0; y<DISPLAY_Y; y++) {
+		for (int x=0; x<DISPLAY_X; x++)
 			scanline[x] = xlate_colors[scanline[x]];
 		scanline += xmod;
 	}
@@ -1842,7 +1842,7 @@ bool MOS6569::EmulateCycle(void)
 			border_on_sample[4] = border_on;
 
 			// Sample spr_disp_on and spr_data for sprite drawing
-			if ((spr_draw = spr_disp_on))
+			if ((spr_draw = spr_disp_on) != 0)
 				memcpy(spr_draw_data, spr_data, 8*4);
 
 			// Turn off sprite display if DMA is off

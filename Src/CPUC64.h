@@ -112,7 +112,6 @@ private:
 	void write_zp(uint16 adr, uint8 byte);
 
 	void new_config(void);
-	void jump(uint16 adr);
 	void illegal_op(uint8 op, uint16 at);
 	void illegal_jump(uint16 at, uint16 to);
 

@@ -175,9 +175,9 @@ void Frodo::MessageReceived(BMessage *msg)
 			}
 			break;
 
-		case MSG_PREFS_DONE: // Preferences editor closed
+		case MSG_PREFS_DONE: { // Preferences editor closed
 			Prefs *prefs;
-			msg->FindPointer("prefs", &prefs);
+			msg->FindPointer("prefs", (void **)&prefs);
 			if (!msg->FindBool("canceled")) {
 				TheC64->NewPrefs(prefs);
 				ThePrefs = *prefs;
@@ -188,6 +188,7 @@ void Frodo::MessageReceived(BMessage *msg)
 			TheC64->TheDisplay->Resume();
 			TheC64->Resume();
 			break;
+		}
 
 		case MSG_RESET:	// Reset C64
 			if (TheC64 != NULL)
