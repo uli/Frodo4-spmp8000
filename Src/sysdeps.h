@@ -186,6 +186,8 @@ typedef long int32;
 #else
 #error No 4 byte type, you lose.
 #endif
+
+#else
 #include <support/SupportDefs.h>
 #endif	// __BEOS__
 

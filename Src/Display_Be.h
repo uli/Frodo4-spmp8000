@@ -28,8 +28,12 @@
 #include "main.h"
 
 
+#ifndef BIT_BANG
 #define BIT_BANG 0
-#define MGA_HACK 1
+#endif
+#ifndef MGA_HACK
+#define MGA_HACK 0
+#endif
 
 
 // Window thread messages
