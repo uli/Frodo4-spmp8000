@@ -193,9 +193,6 @@ static void ghost_widget(const char *name, bool ghosted)
 
 static void ghost_widgets()
 {
-	ghost_widget("drive9_type", prefs->Emul1541Proc);
-	ghost_widget("drive10_type", prefs->Emul1541Proc);
-	ghost_widget("drive11_type", prefs->Emul1541Proc);
 	ghost_widget("drive9_path", prefs->Emul1541Proc);
 	ghost_widget("drive10_path", prefs->Emul1541Proc);
 	ghost_widget("drive11_path", prefs->Emul1541Proc);
