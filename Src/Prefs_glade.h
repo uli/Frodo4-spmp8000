@@ -63,7 +63,7 @@ bool Prefs::ShowEditor(bool startup, char *path)
 
 	// No XML means no prefs editor
 	if (!xml)
-		return false;
+		return startup;
 
 	// Run editor
 	result = false;
