@@ -65,10 +65,10 @@ struct image_file_desc {
 };
 
 // Disk image drive class
-class D64Drive : public Drive {
+class ImageDrive : public Drive {
 public:
-	D64Drive(IEC *iec, const char *filepath);
-	virtual ~D64Drive();
+	ImageDrive(IEC *iec, const char *filepath);
+	virtual ~ImageDrive();
 
 	virtual uint8 Open(int channel, const uint8 *name, int name_len);
 	virtual uint8 Close(int channel);

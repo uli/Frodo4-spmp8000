@@ -112,7 +112,7 @@ static bool match(const uint8 *p, int p_len, const uint8 *n);
  *  Constructor: Prepare emulation, open image file
  */
 
-D64Drive::D64Drive(IEC *iec, const char *filepath) : Drive(iec), the_file(NULL), bam(ram + 0x700), bam_dirty(false)
+ImageDrive::ImageDrive(IEC *iec, const char *filepath) : Drive(iec), the_file(NULL), bam(ram + 0x700), bam_dirty(false)
 {
 	for (int i=0; i<18; i++) {
 		ch[i].mode = CHMOD_FREE;
@@ -132,7 +132,7 @@ D64Drive::D64Drive(IEC *iec, const char *filepath) : Drive(iec), the_file(NULL),
  *  Destructor
  */
 
-D64Drive::~D64Drive()
+ImageDrive::~ImageDrive()
 {
 	close_image();
 }
@@ -142,7 +142,7 @@ D64Drive::~D64Drive()
  *  Close the image file
  */
 
-void D64Drive::close_image(void)
+void ImageDrive::close_image(void)
 {
 	if (the_file) {
 		close_all_channels();
@@ -160,7 +160,7 @@ void D64Drive::close_image(void)
  *  Open the image file
  */
 
-bool D64Drive::change_image(const char *path)
+bool ImageDrive::change_image(const char *path)
 {
 	// Close old image file
 	close_image();
@@ -194,7 +194,7 @@ bool D64Drive::change_image(const char *path)
  *  Open channel
  */
 
-uint8 D64Drive::Open(int channel, const uint8 *name, int name_len)
+uint8 ImageDrive::Open(int channel, const uint8 *name, int name_len)
 {
 	set_error(ERR_OK);
 
@@ -226,7 +226,7 @@ uint8 D64Drive::Open(int channel, const uint8 *name, int name_len)
  *  Open file
  */
 
-uint8 D64Drive::open_file(int channel, const uint8 *name, int name_len)
+uint8 ImageDrive::open_file(int channel, const uint8 *name, int name_len)
 {
 	uint8 plain_name[NAMEBUF_LENGTH];
 	int plain_name_len;
@@ -354,7 +354,7 @@ uint8 D64Drive::open_file(int channel, const uint8 *name, int name_len)
  *  Open channel for reading from file given track/sector of first block
  */
 
-uint8 D64Drive::open_file_ts(int channel, int track, int sector)
+uint8 ImageDrive::open_file_ts(int channel, int track, int sector)
 {
 	// Allocate buffer and set channel mode
 	int buf = alloc_buffer(-1);
@@ -379,7 +379,7 @@ uint8 D64Drive::open_file_ts(int channel, int track, int sector)
  *  Create file and open channel for writing to file
  */
 
-uint8 D64Drive::create_file(int channel, const uint8 *name, int name_len, int type, bool overwrite)
+uint8 ImageDrive::create_file(int channel, const uint8 *name, int name_len, int type, bool overwrite)
 {
 	// Allocate buffer
 	int buf = alloc_buffer(-1);
@@ -439,7 +439,7 @@ const char type_char_1[] = "DSPUREER";
 const char type_char_2[] = "EERSELQG";
 const char type_char_3[] = "LQGRL???";
 
-uint8 D64Drive::open_directory(const uint8 *pattern, int pattern_len)
+uint8 ImageDrive::open_directory(const uint8 *pattern, int pattern_len)
 {
 	// Special treatment for "$0"
 	if (pattern[0] == '0' && pattern_len == 1) {
@@ -594,7 +594,7 @@ uint8 D64Drive::open_directory(const uint8 *pattern, int pattern_len)
  *  Open channel for direct buffer access
  */
 
-uint8 D64Drive::open_direct(int channel, const uint8 *name)
+uint8 ImageDrive::open_direct(int channel, const uint8 *name)
 {
 	int buf = -1;
 
@@ -627,7 +627,7 @@ uint8 D64Drive::open_direct(int channel, const uint8 *name)
  *  Close channel
  */
 
-uint8 D64Drive::Close(int channel)
+uint8 ImageDrive::Close(int channel)
 {
 	switch (ch[channel].mode) {
 		case CHMOD_FREE:
@@ -693,7 +693,7 @@ free:		free_buffer(ch[channel].buf_num);
  *  Close all channels
  */
 
-void D64Drive::close_all_channels()
+void ImageDrive::close_all_channels()
 {
 	for (int i=0; i<15; i++)
 		Close(i);
@@ -708,7 +708,7 @@ void D64Drive::close_all_channels()
  *  Read from channel
  */
 
-uint8 D64Drive::Read(int channel, uint8 &byte)
+uint8 ImageDrive::Read(int channel, uint8 &byte)
 {
 	switch (ch[channel].mode) {
 		case CHMOD_FREE:
@@ -773,7 +773,7 @@ uint8 D64Drive::Read(int channel, uint8 &byte)
  *  Write byte to channel
  */
 
-uint8 D64Drive::Write(int channel, uint8 byte, bool eoi)
+uint8 ImageDrive::Write(int channel, uint8 byte, bool eoi)
 {
 	switch (ch[channel].mode) {
 		case CHMOD_FREE:
@@ -847,7 +847,7 @@ uint8 D64Drive::Write(int channel, uint8 byte, bool eoi)
  *  Reset drive
  */
 
-void D64Drive::Reset(void)
+void ImageDrive::Reset(void)
 {
 	close_all_channels();
 
@@ -874,7 +874,7 @@ void D64Drive::Reset(void)
  *   <- Allocated buffer number or -1
  */
 
-int D64Drive::alloc_buffer(int want)
+int ImageDrive::alloc_buffer(int want)
 {
 	if (want == -1) {
 		for (want=3; want>=0; want--)
@@ -900,7 +900,7 @@ int D64Drive::alloc_buffer(int want)
  *  Free floppy buffer
  */
 
-void D64Drive::free_buffer(int buf)
+void ImageDrive::free_buffer(int buf)
 {
 	buf_free[buf] = true;
 }
@@ -929,7 +929,7 @@ static bool match(const uint8 *p, int p_len, const uint8 *n)
 	return *n == 0xa0 || c == 16;
 }
 
-bool D64Drive::find_file(const uint8 *pattern, int pattern_len, int &dir_track, int &dir_sector, int &entry, bool cont)
+bool ImageDrive::find_file(const uint8 *pattern, int pattern_len, int &dir_track, int &dir_sector, int &entry, bool cont)
 {
 	// Counter to prevent cyclic directories from resulting in an infinite loop
 	int num_dir_blocks = 0;
@@ -967,12 +967,12 @@ bool D64Drive::find_file(const uint8 *pattern, int pattern_len, int &dir_track, 
 	return false;
 }
 
-bool D64Drive::find_first_file(const uint8 *pattern, int pattern_len, int &dir_track, int &dir_sector, int &entry)
+bool ImageDrive::find_first_file(const uint8 *pattern, int pattern_len, int &dir_track, int &dir_sector, int &entry)
 {
 	return find_file(pattern, pattern_len, dir_track, dir_sector, entry, false);
 }
 
-bool D64Drive::find_next_file(const uint8 *pattern, int pattern_len, int &dir_track, int &dir_sector, int &entry)
+bool ImageDrive::find_next_file(const uint8 *pattern, int pattern_len, int &dir_track, int &dir_sector, int &entry)
 {
 	return find_file(pattern, pattern_len, dir_track, dir_sector, entry, true);
 }
@@ -984,7 +984,7 @@ bool D64Drive::find_next_file(const uint8 *pattern, int pattern_len, int &dir_tr
  *  The track/sector and entry numbers are returned
  */
 
-bool D64Drive::alloc_dir_entry(int &track, int &sector, int &entry)
+bool ImageDrive::alloc_dir_entry(int &track, int &sector, int &entry)
 {
 	// First look for free entry in existing directory blocks
 	dir[DIR_NEXT_TRACK] = DIR_TRACK;
@@ -1022,7 +1022,7 @@ bool D64Drive::alloc_dir_entry(int &track, int &sector, int &entry)
  *  Test if block is free in BAM (track/sector are not checked for validity)
  */
 
-bool D64Drive::is_block_free(int track, int sector)
+bool ImageDrive::is_block_free(int track, int sector)
 {
 	uint8 *p = bam + BAM_BITMAP + (track - 1) * 4;
 	int byte = sector / 8 + 1;
@@ -1035,7 +1035,7 @@ bool D64Drive::is_block_free(int track, int sector)
  *  Get number of free blocks on a track
  */
 
-int D64Drive::num_free_blocks(int track)
+int ImageDrive::num_free_blocks(int track)
 {
 	return bam[BAM_BITMAP + (track - 1) * 4];
 }
@@ -1061,7 +1061,7 @@ static void clear_bam(uint8 *bam)
  *  Allocate block in BAM, returns error code
  */
 
-int D64Drive::alloc_block(int track, int sector)
+int ImageDrive::alloc_block(int track, int sector)
 {
 	if (track < 1 || track > 35 || sector < 0 || sector >= num_sectors[track])
 		return ERR_ILLEGALTS;
@@ -1088,7 +1088,7 @@ int D64Drive::alloc_block(int track, int sector)
  *  Free block in BAM, returns error code
  */
 
-int D64Drive::free_block(int track, int sector)
+int ImageDrive::free_block(int track, int sector)
 {
 	if (track < 1 || track > 35 || sector < 0 || sector >= num_sectors[track])
 		return ERR_ILLEGALTS;
@@ -1113,7 +1113,7 @@ int D64Drive::free_block(int track, int sector)
  *  Allocate chain of data blocks in BAM
  */
 
-bool D64Drive::alloc_block_chain(int track, int sector)
+bool ImageDrive::alloc_block_chain(int track, int sector)
 {
 	uint8 buf[256];
 	while (alloc_block(track, sector) == ERR_OK) {
@@ -1130,7 +1130,7 @@ bool D64Drive::alloc_block_chain(int track, int sector)
  *  Free chain of data blocks in BAM
  */
 
-bool D64Drive::free_block_chain(int track, int sector)
+bool ImageDrive::free_block_chain(int track, int sector)
 {
 	uint8 buf[256];
 	while (free_block(track, sector) == ERR_OK) {
@@ -1150,7 +1150,7 @@ bool D64Drive::free_block_chain(int track, int sector)
  *  begin
  */
 
-bool D64Drive::alloc_next_block(int &track, int &sector, int interleave)
+bool ImageDrive::alloc_next_block(int &track, int &sector, int interleave)
 {
 	// Find track with free blocks
 	bool side_changed = false;
@@ -1300,7 +1300,7 @@ int write_sector(FILE *f, const image_file_desc &desc, int track, int sector, ui
 }
 
 // Read sector and set error message, returns false on error
-bool D64Drive::read_sector(int track, int sector, uint8 *buffer)
+bool ImageDrive::read_sector(int track, int sector, uint8 *buffer)
 {
 	int error = ::read_sector(the_file, desc, track, sector, buffer);
 	if (error)
@@ -1309,7 +1309,7 @@ bool D64Drive::read_sector(int track, int sector, uint8 *buffer)
 }
 
 // Write sector and set error message, returns false on error
-bool D64Drive::write_sector(int track, int sector, uint8 *buffer)
+bool ImageDrive::write_sector(int track, int sector, uint8 *buffer)
 {
 	int error = ::write_sector(the_file, desc, track, sector, buffer);
 	if (error)
@@ -1392,7 +1392,7 @@ bool format_image(FILE *f, image_file_desc &desc, bool lowlevel, uint8 id1, uint
  */
 
 // BLOCK-READ:channel,0,track,sector
-void D64Drive::block_read_cmd(int channel, int track, int sector, bool user_cmd)
+void ImageDrive::block_read_cmd(int channel, int track, int sector, bool user_cmd)
 {
 	if (channel >= 16 || ch[channel].mode != CHMOD_DIRECT) {
 		set_error(ERR_NOCHANNEL);
@@ -1410,7 +1410,7 @@ void D64Drive::block_read_cmd(int channel, int track, int sector, bool user_cmd)
 }
 
 // BLOCK-WRITE:channel,0,track,sector
-void D64Drive::block_write_cmd(int channel, int track, int sector, bool user_cmd)
+void ImageDrive::block_write_cmd(int channel, int track, int sector, bool user_cmd)
 {
 	if (write_protected) {
 		set_error(ERR_WRITEPROTECT);
@@ -1431,7 +1431,7 @@ void D64Drive::block_write_cmd(int channel, int track, int sector, bool user_cmd
 }
 
 // BLOCK-ALLOCATE:0,track,sector
-void D64Drive::block_allocate_cmd(int track, int sector)
+void ImageDrive::block_allocate_cmd(int track, int sector)
 {
 	int err = alloc_block(track, sector);
 	if (err) {
@@ -1459,7 +1459,7 @@ void D64Drive::block_allocate_cmd(int track, int sector)
 }
 
 // BLOCK-FREE:0,track,sector
-void D64Drive::block_free_cmd(int track, int sector)
+void ImageDrive::block_free_cmd(int track, int sector)
 {
 	int err = free_block(track, sector);
 	if (err)
@@ -1467,7 +1467,7 @@ void D64Drive::block_free_cmd(int track, int sector)
 }
 
 // BUFFER-POINTER:channel,pos
-void D64Drive::buffer_pointer_cmd(int channel, int pos)
+void ImageDrive::buffer_pointer_cmd(int channel, int pos)
 {
 	if (channel >= 16 || ch[channel].mode != CHMOD_DIRECT) {
 		set_error(ERR_NOCHANNEL);
@@ -1478,7 +1478,7 @@ void D64Drive::buffer_pointer_cmd(int channel, int pos)
 }
 
 // M-R<adr low><adr high>[<number>]
-void D64Drive::mem_read_cmd(uint16 adr, uint8 len)
+void ImageDrive::mem_read_cmd(uint16 adr, uint8 len)
 {
 	error_len = len;
 	if (adr >= 0x300 && adr < 0x1000) {
@@ -1495,7 +1495,7 @@ void D64Drive::mem_read_cmd(uint16 adr, uint8 len)
 }
 
 // M-W<adr low><adr high><number><data...>
-void D64Drive::mem_write_cmd(uint16 adr, uint8 len, uint8 *p)
+void ImageDrive::mem_write_cmd(uint16 adr, uint8 len, uint8 *p)
 {
 	while (len) {
 		if (adr >= 0x300 && adr < 0x1000) {
@@ -1512,7 +1512,7 @@ void D64Drive::mem_write_cmd(uint16 adr, uint8 len, uint8 *p)
 //   COPY:new=file1,file2,...
 //        ^   ^
 // new_file   old_files
-void D64Drive::copy_cmd(const uint8 *new_file, int new_file_len, const uint8 *old_files, int old_files_len)
+void ImageDrive::copy_cmd(const uint8 *new_file, int new_file_len, const uint8 *old_files, int old_files_len)
 {
 	// Check if destination file is already present
 	int dir_track, dir_sector, entry;
@@ -1575,7 +1575,7 @@ void D64Drive::copy_cmd(const uint8 *new_file, int new_file_len, const uint8 *ol
 // RENAME:new=old
 //        ^   ^
 // new_file   old_file
-void D64Drive::rename_cmd(const uint8 *new_file, int new_file_len, const uint8 *old_file, int old_file_len)
+void ImageDrive::rename_cmd(const uint8 *new_file, int new_file_len, const uint8 *old_file, int old_file_len)
 {
 	// Check if destination file is already present
 	int dir_track, dir_sector, entry;
@@ -1606,7 +1606,7 @@ void D64Drive::rename_cmd(const uint8 *new_file, int new_file_len, const uint8 *
 // SCRATCH:file1,file2,...
 //         ^
 //         files
-void D64Drive::scratch_cmd(const uint8 *files, int files_len)
+void ImageDrive::scratch_cmd(const uint8 *files, int files_len)
 {
 	// Check for write-protection
 	if (write_protected) {
@@ -1654,7 +1654,7 @@ void D64Drive::scratch_cmd(const uint8 *files, int files_len)
 }
 
 // INITIALIZE
-void D64Drive::initialize_cmd(void)
+void ImageDrive::initialize_cmd(void)
 {
 	// Close all channels and re-read BAM
 	close_all_channels();
@@ -1668,7 +1668,7 @@ void D64Drive::initialize_cmd(void)
 // NEW:name,id
 //     ^   ^
 //  name   comma (or NULL)
-void D64Drive::new_cmd(const uint8 *name, int name_len, const uint8 *comma)
+void ImageDrive::new_cmd(const uint8 *name, int name_len, const uint8 *comma)
 {
 	// Check for write-protection
 	if (write_protected) {
@@ -1705,7 +1705,7 @@ void D64Drive::new_cmd(const uint8 *name, int name_len, const uint8 *comma)
 }
 
 // VALIDATE
-void D64Drive::validate_cmd(void)
+void ImageDrive::validate_cmd(void)
 {
 	// Backup of old BAM in case something goes amiss
 	uint8 old_bam[256];

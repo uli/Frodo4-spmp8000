@@ -68,7 +68,7 @@ IEC::IEC(C64Display *display) : the_display(display)
 			if (ThePrefs.DriveType[i] == DRVTYPE_DIR)
 				drive[i] = new FSDrive(this, ThePrefs.DrivePath[i]);
 			else if (ThePrefs.DriveType[i] == DRVTYPE_D64)
-				drive[i] = new D64Drive(this, ThePrefs.DrivePath[i]);
+				drive[i] = new ImageDrive(this, ThePrefs.DrivePath[i]);
 			else
 				drive[i] = new T64Drive(this, ThePrefs.DrivePath[i]);
 		}
@@ -120,7 +120,7 @@ void IEC::NewPrefs(Prefs *prefs)
 				if (prefs->DriveType[i] == DRVTYPE_DIR)
 					drive[i] = new FSDrive(this, prefs->DrivePath[i]);
 				else if (prefs->DriveType[i] == DRVTYPE_D64)
-					drive[i] = new D64Drive(this, prefs->DrivePath[i]);
+					drive[i] = new ImageDrive(this, prefs->DrivePath[i]);
 				else
 					drive[i] = new T64Drive(this, prefs->DrivePath[i]);
 			}
