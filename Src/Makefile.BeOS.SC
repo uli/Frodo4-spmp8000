@@ -7,7 +7,7 @@
 ## Application Specific Settings ---------------------------------------------
 
 # specify the name of the binary
-NAME= Frodo SC
+NAME= FrodoSC
 
 # specify the type of binary
 #	APP:	Application
@@ -30,9 +30,9 @@ TYPE= APP
 #	if two source files with the same name (source.c or source.cpp)
 #	are included from different directories.  Also note that spaces
 #	in folder names do not work well with this makefile.
-SRCS = main.cpp Prefs.cpp SAM.cpp Display.cpp C64.cpp CPUC64_SC.cpp CPU1541_SC.cpp \
-    VIC_SC.cpp SID.cpp CIA_SC.cpp REU.cpp IEC.cpp 1541fs.cpp 1541d64.cpp 1541t64.cpp \
-    1541job.cpp
+SRCS = main.cpp Prefs.cpp SAM.cpp Display.cpp C64_SC.cpp CPUC64_SC.cpp CPU1541_SC.cpp \
+    CPU_common.cpp VIC_SC.cpp SID.cpp CIA_SC.cpp REU.cpp IEC.cpp 1541fs.cpp 1541d64.cpp \
+    1541t64.cpp 1541job.cpp
 
 #	specify the resource files to use
 #	full path or a relative path to the resource file can be used.

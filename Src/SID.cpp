@@ -32,7 +32,7 @@
 #include "Prefs.h"
 
 #ifdef __BEOS__
-#include <MediaKit.h>
+#include <media/SoundPlayer.h>
 #endif
 
 #ifdef AMIGA
@@ -417,11 +417,10 @@ private:
 	int sample_in_ptr;				// Index in sample_buf for writing
 
 #ifdef __BEOS__
-	static bool stream_func(void *arg, char *buf, size_t count, void *header);
+	static void buffer_proc(void *cookie, void *buffer, size_t size, const media_raw_audio_format &format);
 	C64 *the_c64;					// Pointer to C64 object
-	BDACStream *the_stream;			// Pointer to stream
-	BSubscriber *the_sub;			// Pointer to subscriber
-	bool in_stream;					// Flag: Subscriber has entered stream
+	BSoundPlayer *the_player;		// Pointer to sound player
+	bool player_stopped;			// Flag: player stopped
 #endif
 
 #ifdef AMIGA
@@ -1199,11 +1198,7 @@ void DigitalRenderer::calc_buffer(int16 *buf, long count)
 #ifdef __riscos__	// on RISC OS we have 8 bit logarithmic sound
 	DigitalRenderer_GetTables(&LinToLog, &LogScale);	// get translation tables
 #else
-#ifdef __BEOS__
-	count >>= 2;	// 16 bit stereo output, count is in bytes
-#else
 	count >>= 1;	// 16 bit mono output, count is in bytes
-#endif
 #endif
 	while (count--) {
 		int32 sum_output;
@@ -1335,21 +1330,7 @@ void DigitalRenderer::calc_buffer(int16 *buf, long count)
 		}
 
 		// Write to buffer
-#ifdef __BEOS__
-		int16 audio_data = (sum_output + sum_output_filter) >> 10;
-		int val = *buf + audio_data;
-		if (val > 32767)
-			val = 32767;
-		if (val < -32768)
-			val = -32768;
-		*buf++ = val;
-		val = *buf + audio_data;
-		if (val > 32767)
-			val = 32767;
-		if (val < -32768)
-			val = -32768;
-		*buf++ = val;
-#elif defined(__riscos__)	// lookup in 8k (13bit) translation table
+#if defined(__riscos__)	// lookup in 8k (13bit) translation table
 		*buf++ = LinToLog[((sum_output + sum_output_filter) >> 13) & 0x1fff];
 #else
 		*buf++ = (sum_output + sum_output_filter) >> 10;

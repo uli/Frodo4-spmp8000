@@ -18,8 +18,6 @@
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#include <MediaKit.h>
-
 #include "C64.h"
 
 
@@ -27,19 +25,19 @@
  *  Initialization, open subscriber
  */
 
+#if B_HOST_IS_LENDIAN
+const media_raw_audio_format audio_format = {SAMPLE_FREQ, 1, media_raw_audio_format::B_AUDIO_SHORT, B_MEDIA_LITTLE_ENDIAN, SAMPLE_FREQ / CALC_FREQ * 2};
+#else
+const media_raw_audio_format audio_format = {SAMPLE_FREQ, 1, media_raw_audio_format::B_AUDIO_SHORT, B_MEDIA_BIG_ENDIAN, SAMPLE_FREQ / CALC_FREQ * 2};
+#endif
+
 void DigitalRenderer::init_sound(void)
 {
-	in_stream = false;
-
-	the_stream = new BDACStream();
-	the_sub = new BSubscriber("Frodo SID emulation");
-	ready = the_sub->Subscribe(the_stream) == B_NO_ERROR;
-	if (ready) {
-		the_stream->SetSamplingRate(SAMPLE_FREQ);
-		the_sub->EnterStream(NULL, true, this, stream_func, NULL, true);
-		the_stream->SetStreamBuffers(SAMPLE_FREQ / CALC_FREQ * 4, 4);	// Must be called after EnterStream()
-		in_stream = true;
-	}
+	the_player = new BSoundPlayer(&audio_format, "Frodo", buffer_proc, NULL, this);
+	the_player->SetHasData(true);
+	the_player->Start();
+	player_stopped = false;
+	ready = true;
 }
 
 
@@ -49,17 +47,10 @@ void DigitalRenderer::init_sound(void)
 
 DigitalRenderer::~DigitalRenderer()
 {
-	if (ready) {
-		if (in_stream) {
-			the_sub->ExitStream(true);
-			in_stream = false;
-		}
-		the_stream->SetStreamBuffers(4096, 8);
-		the_sub->Unsubscribe();
-		ready = false;
+	if (the_player) {
+		the_player->Stop();
+		delete the_player;
 	}
-	delete the_sub;
-	delete the_stream;
 }
 
 
@@ -80,9 +71,9 @@ void DigitalRenderer::EmulateLine(void)
 
 void DigitalRenderer::Pause(void)
 {
-	if (in_stream) {
-		the_sub->ExitStream(true);
-		in_stream = false;
+	if (!player_stopped) {
+		the_player->Stop();
+		player_stopped = true;
 	}
 }
 
@@ -93,9 +84,9 @@ void DigitalRenderer::Pause(void)
 
 void DigitalRenderer::Resume(void)
 {
-	if (!in_stream) {
-		the_sub->EnterStream(NULL, true, this, stream_func, NULL, true);
-		in_stream = true;
+	if (player_stopped) {
+		the_player->Start();
+		player_stopped = false;
 	}
 }
 
@@ -104,9 +95,8 @@ void DigitalRenderer::Resume(void)
  *  Stream function 
  */
 
-bool DigitalRenderer::stream_func(void *arg, char *buf, size_t count, void *header)
+void DigitalRenderer::buffer_proc(void *cookie, void *buffer, size_t size, const media_raw_audio_format &format)
 {
-	((DigitalRenderer *)arg)->calc_buffer((int16 *)buf, count);
-	((DigitalRenderer *)arg)->the_c64->SoundSync();
-	return true;
+	((DigitalRenderer *)cookie)->calc_buffer((int16 *)buffer, size);
+	((DigitalRenderer *)cookie)->the_c64->SoundSync();
 }

@@ -18,7 +18,9 @@
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-// Same as C64.cpp (mainly to keep the BeIDE happy)
+// Same as C64.cpp (but object files are different, and this gives it the
+// name "C64_SC.o" instead of "C64.o" which is needed under some build
+// environments)
 #ifdef __riscos__
 #include "C64.cc"
 #else

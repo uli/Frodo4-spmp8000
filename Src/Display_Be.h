@@ -1025,6 +1025,7 @@ SpeedoView::SpeedoView(BRect frame) : BView(frame, "", B_FOLLOW_NONE, B_WILL_DRA
 	speedostr[0] = 0;
 	bounds = Bounds();
 	SetViewColor(fill_gray);
+	SetLowColor(fill_gray);
 	SetFont(be_plain_font);
 }
 
