@@ -23,6 +23,11 @@ AC_ISC_POSIX
 dnl Checks for libraries.
 AC_CHECK_LIB(vga, vga_setmode, HAVE_SVGA_LIB=yes, HAVE_SVGA_LIB=no)
 AM_PATH_SDL(1.2.0, HAVE_SDL=yes, HAVE_SDL=no)
+HAVE_GLADE=no
+PKG_CHECK_MODULES(GLADE, libglade-2.0 libgnomeui-2.0 >= 1.110.0, HAVE_GLADE=yes)
+if [[ $HAVE_GLADE = yes ]]; then
+  AC_DEFINE(HAVE_GLADE, 1, [Glade support is enabled])
+fi
 
 AC_PATH_XTRA
 
@@ -31,6 +36,7 @@ AC_HEADER_STDC
 AC_CHECK_HEADERS(unistd.h fcntl.h sys/time.h sys/types.h utime.h string.h strings.h values.h ncurses.h)
 AC_CHECK_HEADERS(sys/vfs.h sys/mount.h sys/select.h sys/param.h sys/statfs.h sys/statvfs.h sys/stat.h)
 
+dnl Checks for types.
 AC_CHECK_SIZEOF(char)
 AC_CHECK_SIZEOF(short)
 AC_CHECK_SIZEOF(int)

@@ -46,3 +46,4 @@ rm -rf ${RPM_BUILD_ROOT}
 %{_bindir}/FrodoSC
 %{_bindir}/Frodo_GUI.tcl
 "%{_datadir}/frodo/Kernal ROM"
+%{_datadir}/frodo/Frodo.glade

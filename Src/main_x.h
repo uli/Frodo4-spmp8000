@@ -20,6 +20,10 @@
 
 #include "Version.h"
 
+#ifdef HAVE_GLADE
+#include <gnome.h>
+#endif
+
 
 extern int init_graphics(void);
 
@@ -34,7 +38,10 @@ char Frodo::prefs_path[256] = "";
 
 int main(int argc, char **argv)
 {
-	Frodo *the_app;
+#ifdef HAVE_GLADE
+	gnome_program_init(PACKAGE_NAME, PACKAGE_VERSION, LIBGNOMEUI_MODULE, argc, argv,
+	                   GNOME_PARAM_APP_DATADIR, DATADIR, NULL);
+#endif
 
 	timeval tv;
 	gettimeofday(&tv, NULL);
@@ -42,10 +49,10 @@ int main(int argc, char **argv)
 
 	printf("%s by Christian Bauer\n", VERSION_STRING);
 	if (!init_graphics())
-		return 0;
+		return 1;
 	fflush(stdout);
 
-	the_app = new Frodo();
+	Frodo *the_app = new Frodo();
 	the_app->ArgvReceived(argc, argv);
 	the_app->ReadyToRun();
 	delete the_app;
@@ -94,11 +101,15 @@ void Frodo::ReadyToRun(void)
 	}
 	ThePrefs.Load(prefs_path);
 
-	// Create and start C64
-	TheC64 = new C64;
-	load_rom_files();
-	TheC64->Run();
-	delete TheC64;
+	// Show preferences editor
+	if (ThePrefs.ShowEditor(true, prefs_path)) {
+
+		// Create and start C64
+		TheC64 = new C64;
+		load_rom_files();
+		TheC64->Run();
+		delete TheC64;
+	}
 }
 
 

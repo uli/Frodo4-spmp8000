@@ -419,3 +419,7 @@ bool Prefs::Save(char *filename)
 #ifdef WIN32
 #include "Prefs_WIN32.h"
 #endif
+
+#ifdef HAVE_GLADE
+#include "Prefs_glade.h"
+#endif

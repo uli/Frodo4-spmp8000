@@ -16,10 +16,10 @@ datadir = @datadir@
 DESTDIR =
 
 CXX = @CXX@
-CFLAGS = @CFLAGS@ -I./ -DKBD_LANG=@KBD_LANG@
+CFLAGS = @CFLAGS@ @GLADE_CFLAGS@ -I./ -DKBD_LANG=@KBD_LANG@
 DEFS = @DEFS@ -DDATADIR=\"$(datadir)/frodo/\" -DBINDIR=\"$(bindir)/\"
 LDFLAGS = @LDFLAGS@
-LIBS = @LIBS@
+LIBS = @LIBS@ @GLADE_LIBS@
 INSTALL = @INSTALL@
 INSTALL_PROGRAM = @INSTALL_PROGRAM@
 INSTALL_DATA = @INSTALL_DATA@
@@ -54,6 +54,7 @@ install: Frodo FrodoSC installdirs
 	$(INSTALL_PROGRAM) FrodoSC $(DESTDIR)$(bindir)/FrodoSC
 	$(INSTALL_PROGRAM) Frodo_GUI.tcl $(DESTDIR)$(bindir)/Frodo_GUI.tcl
 	$(INSTALL_DATA) ../Kernal\ ROM $(DESTDIR)$(datadir)/frodo/Kernal\ ROM
+	$(INSTALL_DATA) glade/Frodo.glade $(DESTDIR)$(datadir)/frodo/Frodo.glade
 
 installdirs:
 	$(SHELL) mkinstalldirs $(DESTDIR)$(bindir) $(DESTDIR)$(datadir)/frodo
