@@ -187,29 +187,6 @@ extern HWND hwnd;
 // Command line options.
 extern BOOL full_screen;
 
-#if defined(DEBUG)
-
-inline void Debug(const char *format, ...)
-{
-	va_list args;
-	va_start(args, format);
-	char tmp[256];
-	vsprintf(tmp, format, args);
-	va_end(args);
-	OutputDebugString(tmp);
-}
-
-#else
-
-inline void Debug(const char *format, ...)
-{
-}
-
-#endif
-
-#define DebugResult(message, val) \
-	Debug("%s: 0x%x (%d)\n", message, val, HRESULT_CODE(val))
-
 #endif
 
 
@@ -236,5 +213,12 @@ private:
 // Global C64 object
 extern C64 *TheC64;
 
+
+/*
+ *  Functions
+ */
+
+// Determine whether path name refers to a directory
+extern bool IsDirectory(const char *path);
 
 #endif
