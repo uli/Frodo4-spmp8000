@@ -81,10 +81,6 @@ int init_graphics(void)
 		return 0;
 	}
 
-	// Open window
-	SDL_WM_SetCaption(VERSION_STRING, "Frodo");
-	screen = SDL_SetVideoMode(DISPLAY_X, DISPLAY_Y + 17, 8, SDL_DOUBLEBUF);
-
 	return 1;
 }
 
@@ -97,6 +93,10 @@ C64Display::C64Display(C64 *the_c64) : TheC64(the_c64)
 {
 	quit_requested = false;
 	speedometer_string[0] = 0;
+
+	// Open window
+	SDL_WM_SetCaption(VERSION_STRING, "Frodo");
+	screen = SDL_SetVideoMode(DISPLAY_X, DISPLAY_Y + 17, 8, SDL_DOUBLEBUF | (ThePrefs.DisplayType == DISPTYPE_SCREEN ? SDL_FULLSCREEN : 0));
 
 	// LEDs off
 	for (int i=0; i<4; i++)
