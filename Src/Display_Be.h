@@ -28,6 +28,10 @@
 #include "main.h"
 
 
+#define BIT_BANG 0
+#define MGA_HACK 1
+
+
 // Window thread messages
 const uint32 MSG_REDRAW = 1;
 
@@ -84,7 +88,7 @@ const int key_byte[128] = {
 	   3,   4,   4,  5,   5,  6,  6, 8+0,
 	0x26,0x22,0x2a,  0,   7, -1,  7,  -1,
 
-	   7, 8+0,   0,  0,0x30, -1,  7,   7,
+	0x30, 8+0,   0,  0,0x30, -1,  7,   7,
 	  -1,  -1,  -1, -1,  -1, -1, -1,  -1,
 
 	  -1,  -1,  -1, -1,  -1, -1, -1,  -1,
@@ -141,16 +145,22 @@ private:
 class SpeedoView;
 class LEDView;
 
-class C64Window : public BWindow {
+class C64Window : public BDirectWindow {
 public:
 	C64Window();
 
 	virtual bool QuitRequested(void);
 	virtual void MessageReceived(BMessage *msg);
+	virtual void DirectConnected(direct_buffer_info *info);
 
 	BBitmap *TheBitmap[2];
 	SpeedoView *Speedometer;
 	LEDView *LED[4];
+
+#if BIT_BANG
+	uint8 *bits;
+	int bytes_per_row;
+#endif
 
 private:
 	BitmapView *main_view;
@@ -166,11 +176,20 @@ public:
 	C64Screen(C64Display *display) : BWindowScreen("Frodo", B_8_BIT_640x480, &error), the_display(display)
 	{
 		Lock();
-		BitmapView *main_view = new BitmapView(Bounds(), NULL);
+		TheBitmap = new BBitmap(DisplayFrame, B_COLOR_8_BIT);
+		main_view = new BitmapView(Bounds(), TheBitmap);
 		AddChild(main_view);
 		main_view->MakeFocus();
 		Connected = false;
+		first_connected = true;
+#if MGA_HACK
+		mga_ready = false;
+#endif
 		Unlock();
+	}
+	~C64Screen()
+	{
+		delete TheBitmap;
 	}
 
 	virtual void ScreenConnected(bool active);
@@ -182,10 +201,27 @@ public:
 	bool Connected;			// Flag: screen connected
 	int Speed;
 	char SpeedoStr[16];		// Speedometer value converted to a string
+	BBitmap *TheBitmap;
 
 private:
 	C64Display *the_display;
+	BitmapView *main_view;
+	bool first_connected;
 	status_t error;
+
+#if MGA_HACK
+	area_id mga_clone_area;
+	volatile uint8 *isa_io;
+	bool mga_ready;
+
+	void CRTC_out(int reg, uint8 val) {isa_io[0x3d4] = reg; __eieio(); isa_io[0x3d5] = val; __eieio();}
+	uint8 CRTC_in(int reg) {isa_io[0x3d4] = reg; __eieio(); return isa_io[0x3d5];}
+	void SEQ_out(int reg, uint8 val) {isa_io[0x3c4] = reg; __eieio(); isa_io[0x3c5] = val; __eieio();}
+	uint8 SEQ_in(int reg) {isa_io[0x3c4] = reg; __eieio(); return isa_io[0x3c5];}
+	void GDC_out(int reg, uint8 val) {isa_io[0x3ce] = reg; __eieio(); isa_io[0x3cf] = val; __eieio();}
+	uint8 GDC_in(int reg) {isa_io[0x3ce] = reg; __eieio(); return isa_io[0x3cf];}
+	void ATC_out(int reg, uint8 val) {isa_io[0x3c0] = reg; __eieio(); isa_io[0x3c0] = val; __eieio();}
+#endif
 };
 
 
@@ -313,13 +349,75 @@ void C64Display::Update(void)
 			the_screen->DrawLED(i, led_state[i]);
 		the_screen->DrawSpeedometer();
 
+		// Update C64 display in dobule scan mode
+		if (ThePrefs.DoubleScan) {
+			uint8 *src = (uint8 *)the_screen->TheBitmap->Bits();
+			uint32 src_xmod = the_screen->TheBitmap->BytesPerRow();
+			src += src_xmod * 16 + 32;
+			uint8 *dest = (uint8 *)the_screen->CardInfo()->frame_buffer;
+			uint32 dest_xmod = the_screen->CardInfo()->bytes_per_row;
+#ifdef __POWERPC__
+			double tmp[1];
+			for (int y=0; y<240; y++) {
+				uint32 *p = (uint32 *)src - 1;
+				double *q1 = (double *)dest - 1;
+				double *q2 = q1 + dest_xmod / sizeof(double);
+				for (int x=0; x<80; x++) {
+					uint32 val = *(++p);
+					uint8 *r = (uint8 *)&tmp[1];
+					*(--r) = val;
+					*(--r) = val;
+					val >>= 8;
+					*(--r) = val;
+					*(--r) = val;
+					val >>= 8;
+					*(--r) = val;
+					*(--r) = val;
+					val >>= 8;
+					*(--r) = val;
+					*(--r) = val;
+					double tmp2 = tmp[0];
+					*(++q1) = tmp2;
+					*(++q2) = tmp2;
+				}
+				src += src_xmod;
+				dest += dest_xmod * 2;
+			}
+#else
+			for (int y=0; y<240; y++) {
+				uint32 *p = (uint32 *)src;
+				uint32 *q1 = (uint32 *)dest;
+				uint32 *q2 = q1 + dest_xmod / sizeof(uint32);
+				for (int x=0; x<80; x++) {
+					uint32 val = *p++;
+					uint32 tmp = val & 0x000000ff;
+					tmp |= (val << 8) & 0x0000ff00;
+					tmp |= (val << 8) & 0x00ff0000;
+					tmp |= (val << 16) & 0xff000000;
+					*q1++ = tmp;
+					*q2++ = tmp;
+					tmp = (val >> 16) & 0x000000ff;
+					tmp |= (val >> 8) & 0x0000ff00;
+					tmp |= (val >> 8) & 0x00ff0000;
+					tmp |= val & 0xff000000;
+					*q1++ = tmp;
+					*q2++ = tmp;
+				}
+				src += src_xmod;
+				dest += dest_xmod * 2;
+			}
+#endif
+		}
+
 	} else {
 
+#if !BIT_BANG
 		// Update C64 display
 		BMessage msg(MSG_REDRAW);
 		msg.AddInt32("bitmap", draw_bitmap);
 		the_window->PostMessage(&msg);
 		draw_bitmap ^= 1;
+#endif
 
 		// Update LEDs
 		for (int i=0; i<4; i++)
@@ -351,10 +449,17 @@ void C64Display::Speedometer(int speed)
 
 uint8 *C64Display::BitmapBase(void)
 {
-	if (using_screen)
-		return (uint8 *)the_screen->CardInfo()->frame_buffer;
-	else
+	if (using_screen) {
+		if (ThePrefs.DoubleScan)
+			return (uint8 *)the_screen->TheBitmap->Bits();
+		else
+			return (uint8 *)the_screen->CardInfo()->frame_buffer;
+	} else
+#if BIT_BANG
+		return (uint8 *)the_window->bits;
+#else
 		return (uint8 *)the_window->TheBitmap[draw_bitmap]->Bits();
+#endif
 }
 
 
@@ -364,10 +469,17 @@ uint8 *C64Display::BitmapBase(void)
 
 int C64Display::BitmapXMod(void)
 {
-	if (using_screen)
-		return the_screen->CardInfo()->bytes_per_row;
-	else
+	if (using_screen) {
+		if (ThePrefs.DoubleScan)
+			return the_screen->TheBitmap->BytesPerRow();
+		else
+			return the_screen->CardInfo()->bytes_per_row;
+	} else
+#if BIT_BANG
+		return the_window->bytes_per_row;
+#else
 		return the_window->TheBitmap[draw_bitmap]->BytesPerRow();
+#endif
 }
 
 
@@ -499,7 +611,7 @@ void C64Display::Resume(void)
  *  Window constructor
  */
 
-C64Window::C64Window() : BWindow(WindowFrame, "Frodo", B_TITLED_WINDOW, B_NOT_RESIZABLE | B_NOT_ZOOMABLE)
+C64Window::C64Window() : BDirectWindow(WindowFrame, "Frodo", B_TITLED_WINDOW, B_NOT_RESIZABLE | B_NOT_ZOOMABLE)
 {
 	// Move window to right position
 	Lock();
@@ -524,7 +636,7 @@ C64Window::C64Window() : BWindow(WindowFrame, "Frodo", B_TITLED_WINDOW, B_NOT_RE
 	bar->AddItem(menu);
 	AddChild(bar);
 	SetKeyMenuBar(bar);
-	int mbar_height = bar->Frame().bottom + 1;
+	int mbar_height = int(bar->Frame().bottom) + 1;
 
 	// Resize window to fit menu bar
 	ResizeBy(0, mbar_height);
@@ -585,8 +697,10 @@ void C64Window::MessageReceived(BMessage *msg)
 	switch (msg->what) {
 		case MSG_REDRAW:  // Redraw bitmap
 			MessageQueue()->Lock();
-			while ((msg2 = MessageQueue()->FindMessage(MSG_REDRAW, 0)) != NULL)
+			while ((msg2 = MessageQueue()->FindMessage(MSG_REDRAW, 0)) != NULL) {
 				MessageQueue()->RemoveMessage(msg2);
+				delete msg2;
+			}
 			MessageQueue()->Unlock();
 			main_view->ChangeBitmap(TheBitmap[msg->FindInt32("bitmap")]);
 			Lock();
@@ -601,12 +715,83 @@ void C64Window::MessageReceived(BMessage *msg)
 
 
 /*
+ *  Window connected/disconnected
+ */
+
+void C64Window::DirectConnected(direct_buffer_info *info)
+{
+#if BIT_BANG
+	switch (info->buffer_state & B_DIRECT_MODE_MASK) {
+		case B_DIRECT_STOP:
+//			acquire_sem(drawing_sem);
+			break;
+		case B_DIRECT_MODIFY:
+//			acquire_sem(drawing_sem);
+		case B_DIRECT_START:
+			bits = ((uint8 *)info->bits + info->window_bounds.top * info->bytes_per_row + info->window_bounds.left * info->bits_per_pixel / 8);
+			bytes_per_row = info->bytes_per_row;
+//			release_sem(drawing_sem);
+			break;
+	}
+#endif
+}
+
+
+/*
  *  Workspace activated/deactivated
  */
 
 void C64Screen::ScreenConnected(bool active)
 {
 	if (active) {
+		if (first_connected) {
+			first_connected = false;
+
+#if MGA_HACK
+			mga_clone_area = -1;
+
+			// Construct register area name
+			char mga_area_name[64];
+			int bus = 0, device = 13, function = 0;
+			sprintf(mga_area_name, "102B_0519_%02X%02X%02X regs", bus, device, function);
+
+			// Find MGA register area
+			area_id mga_area = find_area(mga_area_name);
+			if (mga_area > 0) {
+
+				// Clone area, remove write protection
+				volatile uint8 *mga_io;
+				mga_clone_area = clone_area("mga registers", (void **)&mga_io, B_ANY_ADDRESS, B_READ_AREA | B_WRITE_AREA, mga_area);
+				if (mga_clone_area > 0) {
+					isa_io = mga_io + 0x1c00;
+					mga_ready = true;
+				}
+			}
+#endif
+		}
+
+#if MGA_HACK
+		if (mga_ready) {
+			CRTC_out(0x09, 1);			// Enable double scan
+			int a = 4 * 640;
+			CRTC_out(0x0c, a >> 8);		// Center screen vertically
+			CRTC_out(0x0d, a);
+			// defaults:
+			//  total		0x67
+			//  display end	0x4f
+			//  blank start	0x4f
+			//  blank end	  2b
+			//  sync start	0x53
+			//  sync end	  1f
+			CRTC_out(0x00, 0x3f);		// Horizontal timing
+			CRTC_out(0x01, 0x2f);
+			CRTC_out(0x02, 0x2f);
+			CRTC_out(0x03, 0x83);
+			CRTC_out(0x04, 0x32);
+			CRTC_out(0x05, 0x1a);
+		}
+#endif
+
 		FillRect(0, 0, 639, 479, 0);	// Clear screen
 		the_display->TheC64->Resume();
 		Connected = true;
@@ -657,12 +842,18 @@ void C64Screen::DispatchMessage(BMessage *msg, BHandler *handler)
 
 void C64Screen::DrawLED(int i, int state)
 {
+	int maxy;
+	if (ThePrefs.DoubleScan)
+		maxy = 480;
+	else
+		maxy = DISPLAY_Y;
+
 	switch (state) {
 		case LED_ON:
-			FillRect(10+i*20, DISPLAY_Y-20, 20+i*20, DISPLAY_Y-12, 54);
+			FillRect(10+i*20, maxy-20, 20+i*20, maxy-12, 54);
 			break;
 		case LED_ERROR_ON:
-			FillRect(10+i*20, DISPLAY_Y-20, 20+i*20, DISPLAY_Y-12, 44);
+			FillRect(10+i*20, maxy-20, 20+i*20, maxy-12, 44);
 			break;
 	}
 }
@@ -689,14 +880,23 @@ static const int8 Digits[11][8] = {	// Digit images
 void C64Screen::DrawSpeedometer()
 {
 	// Don't display speedometer if we're running at about 100%
-	if (Speed >= 99 && Speed <= 101)
+	if (Speed >= 50 && Speed <= 101)
 		return;
+
+	int maxx, maxy;
+	if (ThePrefs.DoubleScan) {
+		maxx = 640;
+		maxy = 480;
+	} else {
+		maxx = DISPLAY_X;
+		maxy = DISPLAY_Y;
+	}
 
 	char *s = SpeedoStr;
 	char c;
 	long xmod = CardInfo()->bytes_per_row;
-	uint8 *p = (uint8 *)CardInfo()->frame_buffer + DISPLAY_X - 8*8 + (DISPLAY_Y-20) * xmod;
-	while (c = *s++) {
+	uint8 *p = (uint8 *)CardInfo()->frame_buffer + maxx - 8*8 + (maxy-20) * xmod;
+	while ((c = *s++) != 0) {
 		if (c == ' ')
 			continue;
 		if (c == '%')
@@ -729,7 +929,11 @@ void C64Screen::FillRect(int x1, int y1, int x2, int y2, int color)
 	uint8 *p = (uint8 *)CardInfo()->frame_buffer + y1 * xmod + x1;
 	int n = x2 - x1 + 1;
 	for(int y=y1; y<=y2; y++) {
+#ifdef __POWERPC__
 		memset_nc(p, color, n);
+#else
+		memset(p, color, n);
+#endif
 		p += xmod;
 	}
 }
