@@ -33,9 +33,8 @@ SCOBJS  = $(OBJS) C64_SC.o CPUC64_SC.o VIC_SC.o CIA_SC.o CPU1541_SC.o CPU_common
 SCFLAGS = -DFRODO_SC
 SRCS    = main.cpp Display.cpp Prefs.cpp SID.cpp REU.cpp IEC.cpp 1541fs.cpp \
           1541d64.cpp 1541t64.cpp 1541job.cpp SAM.cpp CmdPipe.cpp C64.cpp \
-          C64_PC.cpp C64_SC.cpp CPUC64.cpp CPUC64_PC.cpp CPUC64_SC.cpp \
-          VIC.cpp VIC_SC.cpp CIA.cpp CIA_SC.cpp CPU1541.cpp CPU1541_PC.cpp \
-          CPU1541_SC.cpp CPU_common.cpp
+          C64_SC.cpp CPUC64.cpp CPUC64_SC.cpp VIC.cpp VIC_SC.cpp CIA.cpp \
+          CIA_SC.cpp CPU1541.cpp CPU1541_PC.cpp CPU1541_SC.cpp CPU_common.cpp
 
 ## Rules
 .PHONY: install installdirs uninstall clean distclean depend dep
