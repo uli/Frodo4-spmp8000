@@ -47,10 +47,10 @@ enum {
 };
 
 
-// Display types (BeOS)
+// Display types
 enum {
-	DISPTYPE_WINDOW,	// BWindow
-	DISPTYPE_SCREEN		// BWindowScreen
+	DISPTYPE_WINDOW,	// Window
+	DISPTYPE_SCREEN		// Fullscreen
 };
 
 
