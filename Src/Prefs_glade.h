@@ -198,6 +198,7 @@ static void ghost_widgets()
 	ghost_widget("drive11_path", prefs->Emul1541Proc);
 
 	ghost_widget("sid_filters", prefs->SIDType != SIDTYPE_DIGITAL);
+	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(glade_xml_get_widget(xml, "sid_filters")), prefs->SIDType == SIDTYPE_DIGITAL ? prefs->SIDFilters : (prefs->SIDType == SIDTYPE_SIDCARD ? true : false));
 }
 
 
@@ -241,4 +242,9 @@ extern "C" void on_sid_type_activate(GtkMenuItem *menuitem, gpointer user_data)
 {
 	prefs->SIDType = gtk_option_menu_get_history(GTK_OPTION_MENU(glade_xml_get_widget(xml, "sid_type")));
 	ghost_widgets();
+}
+
+extern "C" void on_sid_filters_toggled(GtkToggleButton *button, gpointer user_data)
+{
+	prefs->SIDFilters = gtk_toggle_button_get_active(button);
 }
