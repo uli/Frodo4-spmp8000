@@ -49,7 +49,6 @@ char AppDirPath[1024];	// Path of application directory
  *  Load C64 ROM files
  */
 
-#ifndef __PSXOS__
 bool Frodo::load_rom_files(void)
 {
 	FILE *file;
@@ -104,7 +103,6 @@ bool Frodo::load_rom_files(void)
 
 	return true;
 }
-#endif
 
 
 #ifdef __BEOS__

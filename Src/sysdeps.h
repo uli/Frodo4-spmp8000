@@ -28,11 +28,8 @@ extern "C"
 #include <stdlib.h>
 #include <assert.h>
 #include <ctype.h>
-
-#ifndef __PSXOS__
 #include <errno.h>
 #include <signal.h>
-#endif
 
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
@@ -95,9 +92,7 @@ extern "C"
 # if HAVE_SYS_TIME_H
 #  include <sys/time.h>
 # else
-#ifndef __PSXOS__
 #  include <time.h>
-#endif
 # endif
 #endif
 
@@ -116,9 +111,6 @@ extern "C"
 # endif
 #endif
 
-#ifndef __PSXOS__
-#include <errno.h>
-#endif
 #include <assert.h>
 
 #if EEXIST == ENOTEMPTY

@@ -238,28 +238,4 @@ class Frodo
 #endif
 
 
-/*
- *  PSX specific stuff
- */
-
-#ifdef __PSXOS__
-
-class Frodo {
-public:
-	Frodo();
-	void ReadyToRun(void);
-
-	C64 *TheC64;
-
-private:
-	bool load_rom_files(void);
-
-	char prefs_path[256];	// Pathname of current preferences file
-};
-
-// Global variables
-extern Frodo *be_app;	// Pointer to Frodo object
-
-#endif
-
 #endif
