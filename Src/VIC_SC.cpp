@@ -1,7 +1,7 @@
 /*
  *  VIC_SC.cpp - 6569R5 emulation (cycle based)
  *
- *  Frodo (C) 1994-1997,2002 Christian Bauer
+ *  Frodo (C) 1994-1997,2002-2003 Christian Bauer
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by

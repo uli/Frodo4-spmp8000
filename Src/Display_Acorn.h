@@ -2,7 +2,7 @@
  *  Display_Acorn.h - C64 graphics display, emulator window handling,
  *                    RISC OS specific stuff
  *
- *  Frodo (C) 1994-1997,2002 Christian Bauer
+ *  Frodo (C) 1994-1997,2002-2003 Christian Bauer
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
