@@ -1,5 +1,9 @@
 Changes from V4.1b to V4.2:
  - Changed license to GPL
+ - ROMs are built into the Frodo executable
+ - Voice 3 mute works
+ - "plain" Frodo removed, "Frodo PC" renamed to "Frodo"
+ - BeOS: added support for digital joysticks connected to the GeekPort
 
 Changes from V4.1a to V4.1b:
  - Unix: Updated Tcl/Tk preferences editor [Gerard Decatrel]
