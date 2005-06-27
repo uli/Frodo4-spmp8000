@@ -1,7 +1,7 @@
 /*
  *  main_Be.h - Main program, BeOS specific stuff
  *
- *  Frodo (C) 1994-1997,2002-2004 Christian Bauer
+ *  Frodo (C) 1994-1997,2002-2005 Christian Bauer
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -359,7 +359,7 @@ public:
 		MovePenTo(204, 52);
 		DrawString("<Christian.Bauer@uni-mainz.de>");
 		MovePenTo(204, 75);
-		DrawString(B_UTF8_COPYRIGHT " Copyright 1994-1997,2002-2004");
+		DrawString(B_UTF8_COPYRIGHT " Copyright 1994-1997,2002-2005");
 		MovePenTo(204, 87);
 		DrawString("Freely distributable.");
 	}

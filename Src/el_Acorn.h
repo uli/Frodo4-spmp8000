@@ -2,7 +2,7 @@
  *  el_Acorn.h - Somewhat faster (on Acorn) versions of the el_-functions
  *               of VIC.cpp
  *
- *  Frodo (C) 1994-1997,2002-2004 Christian Bauer
+ *  Frodo (C) 1994-1997,2002-2005 Christian Bauer
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by

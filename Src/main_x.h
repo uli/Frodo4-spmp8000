@@ -1,7 +1,7 @@
 /*
  *  main_x.h - Main program, Unix specific stuff
  *
- *  Frodo (C) 1994-1997,2002-2004 Christian Bauer
+ *  Frodo (C) 1994-1997,2002-2005 Christian Bauer
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -54,7 +54,7 @@ int main(int argc, char **argv)
 
 #ifndef HAVE_GLADE
 	printf(
-		"%s Copyright (C) 1994-1997,2002-2004 Christian Bauer\n"
+		"%s Copyright (C) 1994-1997,2002-2005 Christian Bauer\n"
 		"This is free software with ABSOLUTELY NO WARRANTY.\n"
 		, VERSION_STRING
 	);

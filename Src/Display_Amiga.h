@@ -2,7 +2,7 @@
  *  Display_Amiga.h - C64 graphics display, emulator window handling,
  *                    Amiga specific stuff
  *
- *  Frodo (C) 1994-1997,2002-2004 Christian Bauer
+ *  Frodo (C) 1994-1997,2002-2005 Christian Bauer
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -501,7 +501,7 @@ void C64Display::PollKeyboard(UBYTE *key_matrix, UBYTE *rev_matrix, UBYTE *joyst
 					case 0: {	// About Frodo
 						TheC64->Pause();
 						char str[256];
-						sprintf(str, "%s by Christian Bauer\n<Christian.Bauer@uni-mainz.de>\n© Copyright 1994-1997,2002-2004", VERSION_STRING);
+						sprintf(str, "%s by Christian Bauer\n<Christian.Bauer@uni-mainz.de>\n© Copyright 1994-1997,2002-2005", VERSION_STRING);
 						ShowRequester(str, "OK");
 						TheC64->Resume();
 						break;
