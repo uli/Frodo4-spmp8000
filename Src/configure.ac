@@ -23,10 +23,28 @@ AC_ISC_POSIX
 dnl Checks for libraries.
 AC_CHECK_LIB(vga, vga_setmode, HAVE_SVGA_LIB=yes, HAVE_SVGA_LIB=no)
 AM_PATH_SDL(1.2.0, HAVE_SDL=yes, HAVE_SDL=no)
-HAVE_GLADE=no
-PKG_CHECK_MODULES(GLADE, libglade-2.0 libgnomeui-2.0 >= 1.110.0, HAVE_GLADE=yes)
-if [[ $HAVE_GLADE = yes ]]; then
-  AC_DEFINE(HAVE_GLADE, 1, [Glade support is enabled])
+
+EMBEDDED_EXTENSION=none
+AC_MSG_CHECKING([if Frodo should be compiled with extensions for an embedded device])
+AC_ARG_WITH([embedded-extension], [AS_HELP_STRING([--with-embedded-extension=qtopia|maemo],[Specify which extension for Frodo on an embedded device should be used.])])
+if [[ x"$with_embedded_extension" == "xqtopia" ]]; then
+  EMBEDDED_EXTENSION=$with_embedded_extension
+  AC_DEFINE(QTOPIA, 1, [Extension for Qtopia is enabled])
+elif [[ x"$with_embedded_extension" == "xmaemo" ]]; then
+  EMBEDDED_EXTENSION=$with_embedded_extension
+  AC_DEFINE(MAEMO, 1, [Extension for Maemo is enabled])
+fi
+AC_MSG_RESULT([$EMBEDDED_EXTENSION])
+
+if [[ x"$EMBEDDED_EXTENSION" == "xnone" ]]; then
+  HAVE_GLADE=no
+  PKG_CHECK_MODULES(GLADE, libglade-2.0 libgnomeui-2.0 >= 1.110.0, HAVE_GLADE=yes)
+  if [[ $HAVE_GLADE = yes ]]; then
+    AC_DEFINE(HAVE_GLADE, 1, [Glade support is enabled])
+  fi
+else
+  GUIOBJS="sdlgui.o file.o dlgFileSelect.o dlgMain.o dlgDrives.o dlgOptions.o dlgVideoSound.o dlgAdvanced.o dlgInput.o"
+  GUISRCS="sdlgui.cpp file.cpp dlgFileSelect.cpp dlgMain.cpp dlgDrives.cpp dlgOptions.cpp dlgVidoSound.cpp dlgAdvanced.cpp dlgInput.cpp"
 fi
 
 AC_PATH_XTRA
@@ -42,6 +60,7 @@ AC_CHECK_SIZEOF(short)
 AC_CHECK_SIZEOF(int)
 AC_CHECK_SIZEOF(long)
 AC_CHECK_SIZEOF(long long)
+AC_CHECK_SIZEOF(void *)
 
 dnl Checks for typedefs, structures, and compiler characteristics.
 AC_TYPE_MODE_T
@@ -90,6 +109,8 @@ AC_SUBST(SET_MAKE)
 AC_SUBST(top_srcdir)
 AC_SUBST(HPUX_REV)
 AC_SUBST(KBD_LANG)
+AC_SUBST(GUIOBJS)
+AC_SUBST(GUISRCS)
 
 dnl Generate Makefile.
 AC_CONFIG_FILES([Makefile])
