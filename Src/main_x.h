@@ -25,7 +25,7 @@
 #endif
 
 // Qtopia Windowing System
-#ifdef QWS
+#ifdef QTOPIA
 extern "C" int main(int argc, char *argv[]);
 #include <SDL.h>
 #endif
