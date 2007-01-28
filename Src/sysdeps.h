@@ -183,6 +183,26 @@ typedef long int32;
 #error No 4 byte type, you lose.
 #endif
 
+#if SIZEOF_LONG == 8
+typedef unsigned long uint64;
+typedef long int64;
+#elif SIZEOF_LONG_LONG == 8
+typedef unsigned long long uint64;
+typedef long long int64;
+#else
+#error No 8 byte type, you lose.
+#endif
+
+#if SIZEOF_VOID_P == 4
+typedef uint32 uintptr;
+typedef int32 intptr;
+#elif SIZEOF_VOID_P == 8
+typedef uint64 uintptr;
+typedef int64 intptr;
+#else
+#error Unsupported size of pointer
+#endif
+
 #else
 #include <support/SupportDefs.h>
 #endif	// __BEOS__
