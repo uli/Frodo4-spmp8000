@@ -2,7 +2,7 @@
 
 ## Version information
 VERSION  = 4
-REVISION = 2
+REVISION = 3
 
 ## System specific configuration
 @SET_MAKE@
@@ -25,13 +25,15 @@ INSTALL_PROGRAM = @INSTALL_PROGRAM@
 INSTALL_DATA = @INSTALL_DATA@
 
 ## Files
-OBJS    = main.o Display.o Prefs.o SID.o REU.o IEC.o 1541fs.o \
+GUIOBJS = @GUIOBJS@
+OBJS    = $(GUIOBJS) main.o Display.o Prefs.o SID.o REU.o IEC.o 1541fs.o \
           1541d64.o 1541t64.o 1541job.o SAM.o CmdPipe.o
 SLOBJS  = $(OBJS) C64.o CPUC64.o VIC.o CIA.o CPU1541.o
 SLFLAGS = -DPRECISE_CPU_CYCLES=1 -DPRECISE_CIA_CYCLES=1 -DPC_IS_POINTER=0
 SCOBJS  = $(OBJS) C64_SC.o CPUC64_SC.o VIC_SC.o CIA_SC.o CPU1541_SC.o CPU_common.o
 SCFLAGS = -DFRODO_SC
-SRCS    = main.cpp Display.cpp Prefs.cpp SID.cpp REU.cpp IEC.cpp 1541fs.cpp \
+GUISRCS = @GUISRCS@
+SRCS    = $(GUISRCS) main.cpp Display.cpp Prefs.cpp SID.cpp REU.cpp IEC.cpp 1541fs.cpp \
           1541d64.cpp 1541t64.cpp 1541job.cpp SAM.cpp CmdPipe.cpp C64.cpp \
           C64_SC.cpp CPUC64.cpp CPUC64_SC.cpp VIC.cpp VIC_SC.cpp CIA.cpp \
           CIA_SC.cpp CPU1541.cpp CPU1541_PC.cpp CPU1541_SC.cpp CPU_common.cpp
