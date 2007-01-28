@@ -19,8 +19,6 @@
 
 #include "sysdeps.h"
 #include "sdlgui.h"
-#include "file.h"
-#include "debug.h"
 
 #include <cstdlib>
 
