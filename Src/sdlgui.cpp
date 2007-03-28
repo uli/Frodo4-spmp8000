@@ -263,9 +263,9 @@ void SDLGui_RefreshObj(SGOBJ *dlg, int objnum)
 
   SDLGui_ObjFullCoord(dlg, objnum, &coord);
 
-  SCRLOCK;
+  screenlock();
   SDLGui_UpdateRect(&coord);
-  SCRUNLOCK;
+  screenunlock();
 }
 
 
@@ -281,7 +281,7 @@ void SDLGui_Text(int x, int y, const char *txt, SDL_Color *col)
 
   SDL_SetColors(fontgfx, col, 1, 1);
 
-  SCRLOCK;
+  screenlock();
   for (i = 0 ; txt[i] != 0 ; i++)
   {
     c = txt[i];
@@ -297,7 +297,7 @@ void SDLGui_Text(int x, int y, const char *txt, SDL_Color *col)
 
     SDL_BlitSurface(fontgfx, &sr, sdlscrn, &dr);
   }
-  SCRUNLOCK;
+  screenunlock();
 }
 
 
@@ -399,7 +399,7 @@ void SDLGui_Draw3DAround(SDL_Rect *coord, SDL_Color *upleftc, SDL_Color *downrig
   Uint32 downrightcol = SDLGui_MapColor(downrightc);
   Uint32 cornercol    = SDLGui_MapColor(cornerc);
 
-  SCRLOCK;
+  screenlock();
 
   for ( i = 1 ; i <= width ; i++)
   {
@@ -440,7 +440,7 @@ void SDLGui_Draw3DAround(SDL_Rect *coord, SDL_Color *upleftc, SDL_Color *downrig
     SDL_FillRect(sdlscrn, &rect, cornercol);
   }
 
-  SCRUNLOCK;
+  screenunlock();
 
   coord->x -= width;
   coord->y -= width;
@@ -459,7 +459,7 @@ void SDLGui_DrawBoxAround(SDL_Rect *coord, SDL_Color *color, int width)
   SDL_Rect rect;
   Uint32 col = SDLGui_MapColor(color);
 
-  SCRLOCK;
+  screenlock();
 
   rect.x = coord->x - width;
   rect.y = coord->y - width;
@@ -485,7 +485,7 @@ void SDLGui_DrawBoxAround(SDL_Rect *coord, SDL_Color *color, int width)
   rect.h = width;
   SDL_FillRect(sdlscrn, &rect, col);
 
-  SCRUNLOCK;
+  screenunlock();
 
   coord->x -= width;
   coord->y -= width;
@@ -512,7 +512,7 @@ void SDLGui_Draw3DBox(SDL_Rect *coord,
 {
   SDL_Rect rect;
 
-  SCRLOCK;
+  screenlock();
 
   // Draw background
   rect.x = coord->x - widthbackground;
@@ -521,7 +521,7 @@ void SDLGui_Draw3DBox(SDL_Rect *coord,
   rect.h = coord->h + (widthbackground * 2);
   SDL_FillRect(sdlscrn, &rect, SDLGui_MapColor(backgroundc));
 
-  SCRUNLOCK;
+  screenunlock();
 
   // Update coords
   coord->x -= widthbackground;

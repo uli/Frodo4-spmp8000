@@ -69,9 +69,6 @@ typedef struct
 extern void screenlock();
 extern void screenunlock();
 
-#define SCRLOCK screenlock();
-#define SCRUNLOCK	screenunlock();
-
 bool SDLGui_Init(SDL_Surface *GUISurface);
 int SDLGui_UnInit(void);
 int SDLGui_DoDialog(SGOBJ *dlg);
@@ -81,12 +78,6 @@ void SDLGui_FreeFont(void);
 SDL_Rect *SDLGui_GetFirstBackgroundRect(void);
 SDL_Rect *SDLGui_GetNextBackgroundRect(void);
 
-#define STATUS_REBOOT	1
-#define STATUS_SHUTDOWN	2
-int GUImainDlg();
 SDL_Event getEvent(SGOBJ *dlg, cursor_state *cursor);
-
-typedef enum { ALERT_OK, ALERT_OKCANCEL } alert_type;
-extern bool SDLGui_Alert(const char *, alert_type type);
 
 #endif /* _SDLGUI_H */
