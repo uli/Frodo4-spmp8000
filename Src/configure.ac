@@ -36,6 +36,10 @@ elif [[ x"$with_embedded_extension" == "xmaemo" ]]; then
 fi
 AC_MSG_RESULT([$EMBEDDED_EXTENSION])
 
+if [[ x"$EMBEDDED_EXTENSION" == "xmaemo" ]]; then
+  PKG_CHECK_MODULES(OSSO, [libosso >= 0.9.19], AC_DEFINE(HAVE_LIBOSSO, [], [Weather libosso is present on the system]), [AC_MSG_NOTICE([libosso not present.])])
+fi
+
 if [[ x"$EMBEDDED_EXTENSION" == "xnone" ]]; then
   HAVE_GLADE=no
   PKG_CHECK_MODULES(GLADE, libglade-2.0 libgnomeui-2.0 >= 1.110.0, HAVE_GLADE=yes)
