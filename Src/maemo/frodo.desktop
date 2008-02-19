@@ -1,0 +1,8 @@
+[Desktop Entry]
+Encoding=UTF-8
+Version=4.3
+Type=Application
+Name=Frodo
+Exec=/usr/bin/Frodo
+X-Osso-Service=org.maemo.frodo
+Icon=qgn_list_gene_default_app
