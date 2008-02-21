@@ -5,4 +5,4 @@ Type=Application
 Name=Frodo
 Exec=/usr/bin/Frodo
 X-Osso-Service=org.maemo.frodo
-Icon=qgn_list_gene_default_app
+Icon=frodo
