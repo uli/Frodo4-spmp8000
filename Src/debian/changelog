@@ -1,4 +1,4 @@
-frodo (4.2.0-5) unstable; urgency=low
+frodo (4.2.0-7) unstable; urgency=low
 
   * Initial Release.
 
@@ -11,3 +11,7 @@ frodo (4.2.0-5) unstable; urgency=low
   * Added Maemo desktop file.
 
  -- Bernd Lachner <dev@lachner-net.de>  Wed, 23 Jan 2008 14:34:00 +0100
+
+  * Added Maemo icons.
+
+ -- Bernd Lachner <dev@lachner-net.de>  Wed, 23 Jan 2008 14:35:00 +0100
