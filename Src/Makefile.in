@@ -57,9 +57,15 @@ install: Frodo FrodoSC installdirs
 	$(INSTALL_PROGRAM) Frodo_GUI.tcl $(DESTDIR)$(bindir)/Frodo_GUI.tcl
 	$(INSTALL_DATA) ../Kernal\ ROM $(DESTDIR)$(datadir)/frodo/Kernal\ ROM
 	$(INSTALL_DATA) glade/Frodo.glade $(DESTDIR)$(datadir)/frodo/Frodo.glade
+	$(INSTALL_DATA) maemo/frodo.desktop $(DESTDIR)$(datadir)/applications/hildon/frodo.desktop
+	$(INSTALL_DATA) maemo/frodo.service $(DESTDIR)$(datadir)/dbus-1/services/frodo.service
+	$(INSTALL_DATA) maemo/frodo.service $(DESTDIR)$(datadir)/dbus-1/services/frodo.service
+	$(INSTALL_DATA) maemo/Frodo_26_26.png $(DESTDIR)$(datadir)/icons/hicolor/26x26/hildon/frodo.png
+	$(INSTALL_DATA) maemo/Frodo_40_40.png $(DESTDIR)$(datadir)/icons/hicolor/40x40/hildon/frodo.png
+	$(INSTALL_DATA) maemo/Frodo_64_64.png $(DESTDIR)$(datadir)/icons/hicolor/scalable/hildon/frodo.png
 
 installdirs:
-	$(SHELL) mkinstalldirs $(DESTDIR)$(bindir) $(DESTDIR)$(datadir)/frodo
+	$(SHELL) mkinstalldirs $(DESTDIR)$(bindir) $(DESTDIR)$(datadir)/frodo $(DESTDIR)$(datadir)/applications/hildon $(DESTDIR)$(datadir)/dbus-1/services $(DESTDIR)$(datadir)/icons/hicolor/26x26/hildon  $(DESTDIR)$(datadir)/icons/hicolor/40x40/hildon $(DESTDIR)$(datadir)/icons/hicolor/scalable/hildon
 
 uninstall:
 	rm -f $(DESTDIR)$(bindir)/Frodo
