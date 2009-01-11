@@ -1,7 +1,7 @@
 /*
  *  CPUC64_SC.cpp - Single-cycle 6510 (C64) emulation
  *
- *  Frodo (C) 1994-1997,2002-2005 Christian Bauer
+ *  Frodo (C) 1994-1997,2002-2009 Christian Bauer
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -179,6 +179,7 @@ void MOS6510::SetState(MOS6510State *s)
 
 	ddr = s->ddr;
 	pr = s->pr;
+	pr_out = 0;  // FIXME: should be saved in MOS6510State
 	new_config();
 
 	pc = s->pc;
@@ -201,7 +202,8 @@ void MOS6510::SetState(MOS6510State *s)
 
 void MOS6510::new_config(void)
 {
-	uint8 port = ~ddr | pr;
+	pr_out = (pr_out & ~ddr) | (pr & ddr);
+	uint8 port = pr | ~ddr;
 
 	basic_in = (port & 3) == 3;
 	kernal_in = port & 2;
@@ -279,12 +281,16 @@ inline uint8 MOS6510::read_byte_io(uint16 adr)
 uint8 MOS6510::read_byte(uint16 adr)
 {
 	if (adr < 0xa000) {
-		if (adr >= 2)
+		if (adr >= 2) {
 			return ram[adr];
-		else if (adr == 0)
+		} else if (adr == 0) {
 			return ddr;
-		else
-			return (ddr & pr) | (~ddr & 0x17);
+		} else {
+			uint8 byte = (pr | ~ddr) & (pr_out | 0x17);
+			if (!(ddr & 0x20))
+				byte &= 0xdf;
+			return byte;
+		}
 	} else
 		return read_byte_io(adr);
 }
@@ -546,7 +552,7 @@ void MOS6510::Reset(void)
 		ram[0x8004] = 0;
 
 	// Initialize extra 6510 registers and memory configuration
-	ddr = pr = 0;
+	ddr = pr = pr_out = 0;
 	new_config();
 
 	// Clear all interrupt lines

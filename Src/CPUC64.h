@@ -1,7 +1,7 @@
 /*
  *  CPUC64.h - 6510 (C64) emulation (line based)
  *
- *  Frodo (C) 1994-1997,2002-2005 Christian Bauer
+ *  Frodo (C) 1994-1997,2002-2009 Christian Bauer
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -147,7 +147,7 @@ private:
 	uint8 state, op;		// Current state and opcode
 	uint16 ar, ar2;			// Address registers
 	uint8 rdbuf;			// Data buffer for RMW instructions
-	uint8 ddr, pr;			// Processor port
+	uint8 ddr, pr, pr_out;	// Processor port
 #else
 	int	borrowed_cycles;	// Borrowed cycles from next line
 #endif
