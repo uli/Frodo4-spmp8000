@@ -1,7 +1,7 @@
 /*
  *  Display.h - C64 graphics display, emulator window handling
  *
- *  Frodo (C) 1994-1997,2002-2005 Christian Bauer
+ *  Frodo (C) 1994-1997,2002-2009 Christian Bauer
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -230,7 +230,7 @@ private:
 
 
 // Exported functions
-extern long ShowRequester(char *str, char *button1, char *button2 = NULL);
+extern long ShowRequester(const char *str, const char *button1, const char *button2 = NULL);
 
 
 #endif

@@ -2,7 +2,7 @@
  *  Display_WIN32.h - C64 graphics display, emulator window handling,
  *                    WIN32 specific stuff
  *
- *  Frodo (C) 1994-1997,2002-2005 Christian Bauer
+ *  Frodo (C) 1994-1997,2002-2009 Christian Bauer
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -198,7 +198,7 @@ const C64Display::DisplayMode *C64Display::GetDisplayModes() const
 	return display_modes;
 }
 
-long ShowRequester(char *str, char *button1, char *button2)
+long ShowRequester(const char *str, const char *button1, const char *button2)
 {
 	if (!TheDisplay) {
 		MessageBox(hwnd, str, "Frodo", MB_OK | MB_ICONSTOP);

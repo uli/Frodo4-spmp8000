@@ -2,7 +2,7 @@
  *  Display_svga.h - C64 graphics display, emulator window handling,
  *                   SVGAlib specific stuff
  *
- *  Frodo (C) 1994-1997,2002-2005 Christian Bauer
+ *  Frodo (C) 1994-1997,2002-2009 Christian Bauer
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -562,7 +562,7 @@ void C64Display::InitColors(uint8 *colors)
  *  Show a requester (error message)
  */
 
-long int ShowRequester(char *a,char *b,char *)
+long int ShowRequester(const char *a, const char *b, const char *)
 {
        printf("%s: %s\n", a, b);
        return 1;
