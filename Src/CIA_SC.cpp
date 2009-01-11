@@ -1,7 +1,7 @@
 /*
  *  CIA_SC.cpp - Single-cycle 6526 emulation
  *
- *  Frodo (C) 1994-1997,2002-2005 Christian Bauer
+ *  Frodo (C) 1994-1997,2002-2009 Christian Bauer
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -599,7 +599,7 @@ ta_idle:
 		case T_LOAD_THEN_COUNT:
 			tb_state = T_COUNT;
 			tb = latchb;			// Reload timer
-			goto ta_idle;
+			goto tb_idle;
 		case T_LOAD_THEN_WAIT_THEN_COUNT:
 			tb_state = T_WAIT_THEN_COUNT;
 			if (tb == 1)
