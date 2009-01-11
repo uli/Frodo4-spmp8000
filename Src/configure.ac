@@ -45,6 +45,7 @@ if [[ x"$EMBEDDED_EXTENSION" == "xnone" ]]; then
   PKG_CHECK_MODULES(GLADE, libglade-2.0 libgnomeui-2.0 >= 1.110.0, HAVE_GLADE=yes)
   if [[ $HAVE_GLADE = yes ]]; then
     AC_DEFINE(HAVE_GLADE, 1, [Glade support is enabled])
+    LDFLAGS="$LDFLAGS -Wl,-E"
   fi
 else
   GUIOBJS="sdlgui.o file.o dlgFileSelect.o dlgMain.o dlgDrives.o dlgOptions.o dlgVideoSound.o dlgAdvanced.o dlgInput.o"
