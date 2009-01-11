@@ -1,7 +1,7 @@
 /*
  *  SAM.h - Simple Assembler and Monitor With Integrated System Explorer
  *
- *  Frodo (C) 1994-1997,2002-2005 Christian Bauer
+ *  Frodo (C) 1994-1997,2002-2009 Christian Bauer
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -218,7 +218,7 @@ static const char adr_length[] = {1, 1, 2, 2, 2, 2, 2, 3, 3, 3, 3, 2, 2};
 
 
 // Prototypes
-static void error(char *s);
+static void error(const char *s);
 static void handle_abort(...);
 static void init_abort(void);
 static void exit_abort(void);
@@ -468,7 +468,7 @@ void SAM(C64 *the_c64)
  *  Print error message
  */
 
-static void error(char *s)
+static void error(const char *s)
 {
 	fprintf(ferr, "*** %s\n", s);
 }
