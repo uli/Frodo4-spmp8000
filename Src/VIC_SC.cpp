@@ -1,7 +1,7 @@
 /*
  *  VIC_SC.cpp - 6569R5 emulation (cycle based)
  *
- *  Frodo (C) 1994-1997,2002-2005 Christian Bauer
+ *  Frodo Copyright (C) Christian Bauer
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -286,10 +286,12 @@ MOS6569::MOS6569(C64 *c64, C64Display *disp, MOS6510 *CPU, uint8 *RAM, uint8 *Ch
 	display_state = false;
 	border_on = ud_border_on = vblanking = false;
 	lp_triggered = draw_this_line = false;
+	is_bad_line = false;
 
-	spr_dma_on = spr_disp_on = 0;
+    spr_exp_y = spr_dma_on = spr_disp_on = 0;
 	for (i=0; i<8; i++) {
 		mc[i] = 63;
+		mc_base[i] = 0;
 		spr_ptr[i] = 0;
 	}
 
@@ -1514,12 +1516,12 @@ bool MOS6569::EmulateCycle(void)
 		// Fetch sprite pointer 3, increment raster counter, trigger raster IRQ,
 		// test for Bad Line, reset BA if sprites 3 and 4 off, read data of sprite 3
 		case 1:
-			if (raster_y == TOTAL_RASTERS-1)
+			if (raster_y == TOTAL_RASTERS-1) {
 
 				// Trigger VBlank in cycle 2
 				vblanking = true;
 
-			else {
+			} else {
 
 				// Increment raster counter
 				raster_y++;
