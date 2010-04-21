@@ -1,7 +1,7 @@
 /*
  *  C64_x.h - Put the pieces together, X specific stuff
  *
- *  Frodo (C) 1994-1997,2002-2005 Christian Bauer
+ *  Frodo Copyright (C) Christian Bauer
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -128,61 +128,14 @@ void C64::c64_ctor1(void)
 	joy_maxx[0] = joy_maxy[0] = -32768;
 	joy_minx[1] = joy_miny[1] = 32767;
 	joy_maxx[1] = joy_maxy[1] = -32768;
-
-	// we need to create a potential GUI subprocess here, because we don't want
-	// it to inherit file-descriptors (such as for the audio-device and alike..)
-#if defined(__svgalib__)
-	gui = 0;
-#else
-	// try to start up Tk gui.
-	gui = new CmdPipe("wish", BINDIR "Frodo_GUI.tcl");
-	if (gui) {
-		if (gui->fail) {
-			delete gui; gui = 0;
-		}
-	}
-	// wait until the GUI process responds (if it does...)
-	if (gui) {
-		if (5 != gui->ewrite("ping\n",5)) {
-			delete gui; gui = 0;
-		} else {
-			char c;
-			fd_set set;
-			FD_ZERO(&set);
-			FD_SET(gui->get_read_fd(), &set);
- 			struct timeval tv;
-			tv.tv_usec = 0;
-			tv.tv_sec = 5;
-// Use the following commented line for HP-UX < 10.20
-//			if (select(FD_SETSIZE, (int *)&set, (int *)NULL, (int *)NULL, &tv) <= 0) {
-			if (select(FD_SETSIZE, &set, NULL, NULL, &tv) <= 0) {
-				delete gui; gui = 0;
-			} else {
-				if (1 != gui->eread(&c, 1)) {
-					delete gui; gui = 0;
-				} else {
-					if (c != 'o') {
-						delete gui; gui = 0;
-					}
-				}
-			}
-		}
-	}
-#endif // __svgalib__
 }
 
 void C64::c64_ctor2(void)
 {
-#ifndef  __svgalib__  
-   if (!gui) {
-   	fprintf(stderr,"Alas, master, no preferences window will be available.\n"
-   	               "If you wish to see one, make sure the 'wish' interpreter\n"
-   	               "(Tk version >= 4.1) is installed in your path.\n"
-   	               "You can still use Frodo, though. Use F10 to quit, \n"
-   	               "F11 to cause an NMI and F12 to reset the C64.\n"
-   	               "You can change the preferences by editing ~/.frodorc\n");
-   }
-#endif // SVGAlib
+   	printf("Use F9 to enter the SAM machine language monitor,\n"
+   	       "F10 to edit preferences or quit,\n"
+   	       "F11 to cause an NMI (RESTORE key) and\n"
+   	       "F12 to reset the C64.\n\n");
   
 	gettimeofday(&tv_start, NULL);
 }
@@ -285,8 +238,6 @@ void C64::VBlank(bool draw_frame)
 
 void C64::thread_func(void)
 {
-	int linecnt = 0;
-
 #ifdef FRODO_SC
 	while (!quit_thyself) {
 
@@ -335,44 +286,25 @@ void C64::thread_func(void)
 			// 1541 processor disabled, only emulate 6510
 			TheCPU->EmulateLine(cycles);
 #endif
-		linecnt++;
-#if !defined(__svgalib__)
-		if ((linecnt & 0xfff) == 0 && gui) {
+	}
+}
 
-			// check for command from GUI process
-		// fprintf(stderr,":");
-			while (gui->probe()) {
-				char c;
-				if (gui->eread(&c, 1) != 1) {
-					delete gui;
-					gui = 0;
-					fprintf(stderr,"Oops, GUI process died...\n");
-				} else {
-               // fprintf(stderr,"%c",c);
-					switch (c) {
-						case 'q':
-							quit_thyself = true;
-							break;
-						case 'r':
-							Reset();
-							break;
-						case 'p':{
-							Prefs *np = Frodo::reload_prefs();
-							NewPrefs(np);
-							ThePrefs = *np;
-							break;
-						}
-						default:
-							break;
-					}
-				}
-			}
-		}
-#endif
-	}
-#if !defined(__svgalib__)
-	if (gui) {
-		gui->ewrite("quit\n",5);
-	}
-#endif
+
+/*
+ *  Pause main emulation thread
+ */
+
+void C64::Pause(void)
+{
+	TheSID->PauseSound();
+}
+
+
+/*
+ *  Resume main emulation thread
+ */
+
+void C64::Resume(void)
+{
+	TheSID->ResumeSound();
 }
