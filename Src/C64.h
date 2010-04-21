@@ -1,7 +1,7 @@
 /*
  *  C64.h - Put the pieces together
  *
- *  Frodo (C) 1994-1997,2002-2005 Christian Bauer
+ *  Frodo Copyright (C) Christian Bauer
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -110,9 +110,7 @@ public:
 	MOS6502_1541 *TheCPU1541;	// 1541
 	Job1541 *TheJob1541;
 
-#ifdef FRODO_SC
-	uint32 CycleCounter;
-#endif
+	uint32 CycleCounter;  // Cycle counter for Frodo SC
 
 private:
 	void c64_ctor1(void);
@@ -163,8 +161,6 @@ private:
 #ifdef __unix
 	void open_close_joystick(int port, int oldjoy, int newjoy);
 	double speed_index;
-public:
-	CmdPipe *gui;
 #endif
 
 #ifdef WIN32
