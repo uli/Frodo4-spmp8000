@@ -1,7 +1,7 @@
 /*
  *  VIC.cpp - 6569R5 emulation (line based)
  *
- *  Frodo (C) 1994-1997,2002-2005 Christian Bauer
+ *  Frodo Copyright (C) Christian Bauer
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -251,7 +251,7 @@ static bool display_state;				// true: Display state, false: Idle state
 static bool border_on;					// Flag: Upper/lower border on
 static bool border_40_col;				// Flag: 40 column border
 static bool frame_skipped;				// Flag: Frame is being skipped
-static uint8 bad_lines_enabled;		// Flag: Bad Lines enabled for this frame
+static uint8 bad_lines_enabled;			// Flag: Bad Lines enabled for this frame
 static bool lp_triggered;				// Flag: Lightpen was triggered in this frame
 #endif
 
@@ -332,6 +332,7 @@ MOS6569::MOS6569(C64 *c64, C64Display *disp, MOS6510 *CPU, uint8 *RAM, uint8 *Ch
 	display_idx = 0;
 	display_state = false;
 	border_on = false;
+	bad_lines_enabled = false;
 	lp_triggered = false;
 
 	sprite_on = 0;
