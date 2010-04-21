@@ -1,7 +1,7 @@
 /*
  *  1541d64.cpp - 1541 emulation in disk image files (.d64/.x64/zipcode)
  *
- *  Frodo (C) 1994-1997,2002-2005 Christian Bauer
+ *  Frodo Copyright (C) Christian Bauer
  *  zipcode decoding routines (C) 1993-1997 Marko Mäkelä, Paul David Doherty
  *
  *  This program is free software; you can redistribute it and/or modify
@@ -119,6 +119,12 @@ static bool parse_image_file(FILE *f, image_file_desc &desc);
 
 ImageDrive::ImageDrive(IEC *iec, const char *filepath) : Drive(iec), the_file(NULL), bam(ram + 0x700), bam_dirty(false)
 {
+	desc.type = TYPE_D64;
+	desc.header_size = 0;
+	desc.num_tracks = 35;
+	desc.id1 = desc.id2 = 0;
+	desc.has_error_info = false;
+
 	for (int i=0; i<18; i++) {
 		ch[i].mode = CHMOD_FREE;
 		ch[i].buf = NULL;
