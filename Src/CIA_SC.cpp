@@ -1,7 +1,7 @@
 /*
  *  CIA_SC.cpp - Single-cycle 6526 emulation
  *
- *  Frodo (C) 1994-1997,2002-2009 Christian Bauer
+ *  Frodo Copyright (C) Christian Bauer
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -93,6 +93,7 @@ void MOS6526::Reset(void)
 	ta_cnt_phi2 = tb_cnt_phi2 = tb_cnt_ta = false;
 
 	ta_irq_next_cycle = tb_irq_next_cycle = false;
+	has_new_cra = has_new_crb = false;
 	ta_state = tb_state = T_STOP;
 }
 
