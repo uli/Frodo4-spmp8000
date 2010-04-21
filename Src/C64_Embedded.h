@@ -1,7 +1,7 @@
 /*
  *  C64_x.h - Put the pieces together, X specific stuff
  *
- *  Frodo (C) 1994-1997,2002-2004 Christian Bauer
+ *  Frodo Copyright (C) Christian Bauer
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -232,8 +232,6 @@ void C64::VBlank(bool draw_frame)
 
 void C64::thread_func(void)
 {
-	int linecnt = 0;
-
 #ifdef FRODO_SC
 	while (!quit_thyself) {
 
@@ -281,40 +279,6 @@ void C64::thread_func(void)
 		} else
 			// 1541 processor disabled, only emulate 6510
 			TheCPU->EmulateLine(cycles);
-#endif
-		linecnt++;
-#if !defined(__svgalib__)
-		if ((linecnt & 0xfff) == 0 && gui) {
-
-			// check for command from GUI process
-		// fprintf(stderr,":");
-			while (gui->probe()) {
-				char c;
-				if (gui->eread(&c, 1) != 1) {
-					delete gui;
-					gui = 0;
-					fprintf(stderr,"Oops, GUI process died...\n");
-				} else {
-               // fprintf(stderr,"%c",c);
-					switch (c) {
-						case 'q':
-							quit_thyself = true;
-							break;
-						case 'r':
-							Reset();
-							break;
-						case 'p':{
-							Prefs *np = Frodo::reload_prefs();
-							NewPrefs(np);
-							ThePrefs = *np;
-							break;
-						}
-						default:
-							break;
-					}
-				}
-			}
-		}
 #endif
 	}
 }
