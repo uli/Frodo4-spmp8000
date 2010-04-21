@@ -193,7 +193,7 @@
 	      <property name="spacing">6</property>
 
 	      <child>
-		<widget class="GtkFrame" id="frame1">
+		<widget class="GtkFrame" id="1541_emulation">
 		  <property name="visible">True</property>
 		  <property name="label_xalign">0</property>
 		  <property name="label_yalign">0.5</property>
@@ -245,7 +245,7 @@
 	      </child>
 
 	      <child>
-		<widget class="GtkFrame" id="frame3">
+		<widget class="GtkFrame" id="drive_paths">
 		  <property name="visible">True</property>
 		  <property name="label_xalign">0</property>
 		  <property name="label_yalign">0.5</property>
@@ -534,7 +534,7 @@
 	      </child>
 
 	      <child>
-		<widget class="GtkFrame" id="frame2">
+		<widget class="GtkFrame" id="options_frame">
 		  <property name="visible">True</property>
 		  <property name="label_xalign">0</property>
 		  <property name="label_yalign">0.5</property>
@@ -621,7 +621,7 @@
 	      <property name="spacing">6</property>
 
 	      <child>
-		<widget class="GtkFrame" id="frame4">
+		<widget class="GtkFrame" id="video_options">
 		  <property name="visible">True</property>
 		  <property name="label_xalign">0</property>
 		  <property name="label_yalign">0.5</property>
@@ -776,7 +776,7 @@
 	      </child>
 
 	      <child>
-		<widget class="GtkFrame" id="frame5">
+		<widget class="GtkFrame" id="sound_options">
 		  <property name="visible">True</property>
 		  <property name="label_xalign">0</property>
 		  <property name="label_yalign">0.5</property>
@@ -960,7 +960,7 @@
 	      <property name="spacing">6</property>
 
 	      <child>
-		<widget class="GtkFrame" id="frame8">
+		<widget class="GtkFrame" id="joysticks">
 		  <property name="visible">True</property>
 		  <property name="label_xalign">0</property>
 		  <property name="label_yalign">0.5</property>
@@ -1175,7 +1175,7 @@
 	      <property name="spacing">6</property>
 
 	      <child>
-		<widget class="GtkFrame" id="frame6">
+		<widget class="GtkFrame" id="speed_control">
 		  <property name="visible">True</property>
 		  <property name="label_xalign">0</property>
 		  <property name="label_yalign">0.5</property>
@@ -1228,7 +1228,7 @@
 			      <property name="update_policy">GTK_UPDATE_ALWAYS</property>
 			      <property name="snap_to_ticks">True</property>
 			      <property name="wrap">False</property>
-			      <property name="adjustment">1 1 100 1 10 10</property>
+			      <property name="adjustment">1 1 100 1 10 0</property>
 			    </widget>
 			    <packing>
 			      <property name="padding">0</property>
@@ -1315,7 +1315,7 @@
 	      </child>
 
 	      <child>
-		<widget class="GtkFrame" id="frame7">
+		<widget class="GtkFrame" id="memory_expansion">
 		  <property name="visible">True</property>
 		  <property name="label_xalign">0</property>
 		  <property name="label_yalign">0.5</property>
@@ -1472,7 +1472,7 @@
 	      <property name="spacing">6</property>
 
 	      <child>
-		<widget class="GtkFrame" id="frame9">
+		<widget class="GtkFrame" id="timing_control">
 		  <property name="visible">True</property>
 		  <property name="label_xalign">0</property>
 		  <property name="label_yalign">0.5</property>
@@ -1610,7 +1610,7 @@
 			  <property name="update_policy">GTK_UPDATE_ALWAYS</property>
 			  <property name="snap_to_ticks">True</property>
 			  <property name="wrap">False</property>
-			  <property name="adjustment">1 1 1000 1 10 10</property>
+			  <property name="adjustment">1 1 1000 1 10 0</property>
 			</widget>
 			<packing>
 			  <property name="left_attach">1</property>
@@ -1632,7 +1632,7 @@
 			  <property name="update_policy">GTK_UPDATE_ALWAYS</property>
 			  <property name="snap_to_ticks">True</property>
 			  <property name="wrap">False</property>
-			  <property name="adjustment">1 1 1000 1 10 10</property>
+			  <property name="adjustment">1 1 1000 1 10 0</property>
 			</widget>
 			<packing>
 			  <property name="left_attach">1</property>
@@ -1654,7 +1654,7 @@
 			  <property name="update_policy">GTK_UPDATE_ALWAYS</property>
 			  <property name="snap_to_ticks">True</property>
 			  <property name="wrap">False</property>
-			  <property name="adjustment">1 1 1000 1 10 10</property>
+			  <property name="adjustment">1 1 1000 1 10 0</property>
 			</widget>
 			<packing>
 			  <property name="left_attach">1</property>
@@ -1676,7 +1676,7 @@
 			  <property name="update_policy">GTK_UPDATE_ALWAYS</property>
 			  <property name="snap_to_ticks">True</property>
 			  <property name="wrap">False</property>
-			  <property name="adjustment">1 1 1000 1 10 10</property>
+			  <property name="adjustment">1 1 1000 1 10 0</property>
 			</widget>
 			<packing>
 			  <property name="left_attach">1</property>
@@ -1721,7 +1721,7 @@
 	      </child>
 
 	      <child>
-		<widget class="GtkFrame" id="frame10">
+		<widget class="GtkFrame" id="advanced_options">
 		  <property name="visible">True</property>
 		  <property name="label_xalign">0</property>
 		  <property name="label_yalign">0.5</property>
@@ -1832,7 +1832,7 @@
   <property name="type_hint">GDK_WINDOW_TYPE_HINT_DIALOG</property>
   <property name="gravity">GDK_GRAVITY_NORTH_WEST</property>
   <property name="focus_on_map">True</property>
-  <property name="copyright" translatable="yes">Copyright © 1994-1997,2002-2004 Christian Bauer et al.</property>
+  <property name="copyright" translatable="yes">Copyright © Christian Bauer et al.</property>
   <property name="comments" translatable="yes">A free, portable Commodore 64 emulator</property>
   <property name="authors">Main Program and Project Administration:
 Christian Bauer
@@ -1840,10 +1840,6 @@ Christian Bauer
 Initial Unix Port:
 Bernd Schmidt
 Lutz Vieweg
-
-Tcl/Tk Interface:
-Lutz Vieweg
-Gerard Decatrel
 
 Frodo Logo Design:
 Tinic Urou

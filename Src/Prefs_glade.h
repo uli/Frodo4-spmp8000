@@ -1,7 +1,7 @@
 /*
  *  Prefs_glade.h - Global preferences, Glade/Gnome/Gtk+ specific stuff
  *
- *  Frodo (C) 1994-1997,2002-2005 Christian Bauer
+ *  Frodo Copyright (C) Christian Bauer
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -17,6 +17,8 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
+
+#include "Version.h"
 
 #include <gnome.h>
 #include <glade/glade.h>
@@ -47,10 +49,10 @@ static void ghost_widgets();
  *  prefs_name points to the file name of the preferences (which may be changed)
  */
 
-bool Prefs::ShowEditor(bool startup, char *path)
+bool Prefs::ShowEditor(bool startup, char *prefs_name)
 {
 	prefs = this;
-	prefs_path = path;
+	prefs_path = prefs_name;
 
 	// Load XML user interface file on startup
 	if (startup) {
@@ -67,7 +69,10 @@ bool Prefs::ShowEditor(bool startup, char *path)
 
 	// Run editor
 	result = false;
+
+	gtk_widget_show(glade_xml_get_widget(xml, "prefs_win"));
 	gtk_main();
+
 	return result;
 }
 
@@ -199,6 +204,9 @@ static void ghost_widgets()
 
 	ghost_widget("sid_filters", prefs->SIDType != SIDTYPE_DIGITAL);
 	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(glade_xml_get_widget(xml, "sid_filters")), prefs->SIDType == SIDTYPE_DIGITAL ? prefs->SIDFilters : (prefs->SIDType == SIDTYPE_SIDCARD ? true : false));
+
+	ghost_widget("timing_control", IsFrodoSC);
+	ghost_widget("advanced_options", IsFrodoSC);
 }
 
 
@@ -216,6 +224,7 @@ extern "C" void on_ok_clicked(GtkButton *button, gpointer user_data)
 	result = true;
 	get_values();
 	prefs->Save(prefs_path);
+	gtk_widget_hide(glade_xml_get_widget(xml, "prefs_win"));
 	gtk_main_quit();
 }
 
@@ -228,8 +237,11 @@ extern "C" void on_quit_clicked(GtkButton *button, gpointer user_data)
 extern "C" void on_about_activate(GtkMenuItem *menuitem, gpointer user_data)
 {
 	GladeXML *about_xml = glade_xml_new(DATADIR "Frodo.glade", "about_win", NULL);
-	if (about_xml)
-		gtk_widget_show(glade_xml_get_widget(about_xml, "about_win"));
+	if (about_xml) {
+		GtkWidget *about_win = glade_xml_get_widget(about_xml, "about_win");
+		g_object_set(about_win, "name", VERSION_STRING, NULL);
+		gtk_widget_show(about_win);
+    }
 }
 
 extern "C" void on_emul1541_proc_toggled(GtkToggleButton *button, gpointer user_data)
