@@ -1,7 +1,7 @@
 /*
  *  C64.cpp - Put the pieces together
  *
- *  Frodo (C) 1994-1997,2002-2005 Christian Bauer
+ *  Frodo Copyright (C) Christian Bauer
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -106,9 +106,7 @@ C64::C64()
 	open_close_joysticks(0, 0, ThePrefs.Joystick1Port, ThePrefs.Joystick2Port);
 	joykey = 0xff;
 
-#ifdef FRODO_SC
 	CycleCounter = 0;
-#endif
 
 	// System-dependent things
 	c64_ctor2();
