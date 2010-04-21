@@ -1,7 +1,7 @@
 /*
  *  main_x.h - Main program, Unix specific stuff
  *
- *  Frodo (C) 1994-1997,2002-2005 Christian Bauer
+ *  Frodo Copyright (C) Christian Bauer
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -34,6 +34,7 @@ extern int init_graphics(void);
 
 
 // Global variables
+Frodo *TheApp = NULL;
 char Frodo::prefs_path[256] = "";
 
 
@@ -54,7 +55,7 @@ int main(int argc, char **argv)
 
 #ifndef HAVE_GLADE
 	printf(
-		"%s Copyright (C) 1994-1997,2002-2005 Christian Bauer\n"
+		"%s Copyright (C) Christian Bauer\n"
 		"This is free software with ABSOLUTELY NO WARRANTY.\n"
 		, VERSION_STRING
 	);
@@ -63,10 +64,10 @@ int main(int argc, char **argv)
 		return 1;
 	fflush(stdout);
 
-	Frodo *the_app = new Frodo();
-	the_app->ArgvReceived(argc, argv);
-	the_app->ReadyToRun();
-	delete the_app;
+	TheApp = new Frodo();
+	TheApp->ArgvReceived(argc, argv);
+	TheApp->ReadyToRun();
+	delete TheApp;
 
 	return 0;
 }
@@ -97,7 +98,7 @@ void Frodo::ArgvReceived(int argc, char **argv)
  *  Arguments processed, run emulation
  */
 
-void Frodo::ReadyToRun(void)
+void Frodo::ReadyToRun()
 {
 	getcwd(AppDirPath, 256);
 
@@ -115,7 +116,7 @@ void Frodo::ReadyToRun(void)
 	// Show preferences editor
 #ifdef HAVE_GLADE
 	if (!ThePrefs.ShowEditor(true, prefs_path))
-		return;
+		return;  // "Quit" clicked
 #endif
 
 	// Create and start C64
@@ -126,11 +127,20 @@ void Frodo::ReadyToRun(void)
 }
 
 
-Prefs *Frodo::reload_prefs(void)
+/*
+ *  Run preferences editor
+ */
+
+bool Frodo::RunPrefsEditor(void)
 {
-	static Prefs newprefs;
-	newprefs.Load(prefs_path);
-	return &newprefs;
+	Prefs *prefs = new Prefs(ThePrefs);
+	bool result = prefs->ShowEditor(false, prefs_path);
+	if (result) {
+		TheC64->NewPrefs(prefs);
+		ThePrefs = *prefs;
+	}
+	delete prefs;
+	return result;
 }
 
 

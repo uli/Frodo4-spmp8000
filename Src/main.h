@@ -1,7 +1,7 @@
 /*
  *  main.h - Main program
  *
- *  Frodo (C) 1994-1997,2002-2005 Christian Bauer
+ *  Frodo Copyright (C) Christian Bauer
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -124,15 +124,19 @@ class Frodo {
 public:
 	Frodo();
 	void ArgvReceived(int argc, char **argv);
-	void ReadyToRun(void);
-	static Prefs *reload_prefs(void);
-	static char* get_prefs_path() { return prefs_path; };
+	void ReadyToRun();
+	bool RunPrefsEditor();
+
+    static const char *get_prefs_path() { return prefs_path; }
+
 private:
 	void load_rom(const char *which, const char *path, uint8 *where, size_t size, const uint8 *builtin);
 	void load_rom_files();
 
 	static char prefs_path[256];	// Pathname of current preferences file
 };
+
+extern Frodo *TheApp;  // Pointer to Frodo object
 
 #endif
 
