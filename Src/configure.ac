@@ -1,6 +1,6 @@
 dnl Process this file with autoconf to produce a configure script.
 
-AC_INIT(Frodo, 4.2, [Christian.Bauer@uni-mainz.de], Frodo)
+AC_INIT(Frodo, 4.2)
 AC_CONFIG_SRCDIR(main.cpp)
 AC_PREREQ(2.52)
 AC_CONFIG_HEADER(sysconfig.h)
@@ -11,6 +11,7 @@ AC_PROG_CXX
 AC_PROG_CPP
 AC_PROG_MAKE_SET
 AC_PROG_INSTALL
+PKG_PROG_PKG_CONFIG
 
 dnl -fomit-frame-pointer makes things faster
 if [[ x"$GXX" = "xyes" ]]; then
@@ -42,7 +43,7 @@ fi
 
 if [[ x"$EMBEDDED_EXTENSION" == "xnone" ]]; then
   HAVE_GLADE=no
-  PKG_CHECK_MODULES(GLADE, libglade-2.0 libgnomeui-2.0 >= 1.110.0, HAVE_GLADE=yes)
+  PKG_CHECK_MODULES(GLADE, [libglade-2.0 libgnomeui-2.0 >= 1.110.0], HAVE_GLADE=yes)
   if [[ $HAVE_GLADE = yes ]]; then
     AC_DEFINE(HAVE_GLADE, 1, [Glade support is enabled])
     LDFLAGS="$LDFLAGS -Wl,-E"
