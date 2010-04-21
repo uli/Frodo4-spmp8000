@@ -2,7 +2,7 @@
  *  Display_SDL.h - C64 graphics display, emulator window handling,
  *                  SDL specific stuff
  *
- *  Frodo (C) 1994-1997,2002-2009 Christian Bauer
+ *  Frodo Copyright (C) Christian Bauer
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -98,6 +98,10 @@ C64Display::C64Display(C64 *the_c64) : TheC64(the_c64)
 	SDL_WM_SetCaption(VERSION_STRING, "Frodo");
 	screen = SDL_SetVideoMode(DISPLAY_X, DISPLAY_Y + 17, 8, SDL_DOUBLEBUF | (ThePrefs.DisplayType == DISPTYPE_SCREEN ? SDL_FULLSCREEN : 0));
 
+	// Hide mouse pointer in fullscreen mode
+	if (ThePrefs.DisplayType == DISPTYPE_SCREEN)
+		SDL_ShowCursor(0);
+
 	// LEDs off
 	for (int i=0; i<4; i++)
 		led_state[i] = old_led_state[i] = LED_OFF;
@@ -122,7 +126,15 @@ C64Display::C64Display(C64 *the_c64) : TheC64(the_c64)
 
 C64Display::~C64Display()
 {
+	pulse_tv.it_interval.tv_sec = 0;
+	pulse_tv.it_interval.tv_usec = 0;
+	pulse_tv.it_value.tv_sec = 0;
+	pulse_tv.it_value.tv_usec = 0;
+	setitimer(ITIMER_REAL, &pulse_tv, NULL);
+
 	SDL_Quit();
+
+	c64_disp = NULL;
 }
 
 
@@ -429,11 +441,27 @@ void C64Display::PollKeyboard(uint8 *key_matrix, uint8 *rev_matrix, uint8 *joyst
 				switch (event.key.keysym.sym) {
 
 					case SDLK_F9:	// F9: Invoke SAM
-						SAM(TheC64);
+						if (ThePrefs.DisplayType == DISPTYPE_WINDOW)  // don't invoke in fullscreen mode
+							SAM(TheC64);
 						break;
 
-					case SDLK_F10:	// F10: Quit
-						quit_requested = true;
+					case SDLK_F10:	// F10: Prefs/Quit
+						TheC64->Pause();
+						if (ThePrefs.DisplayType == DISPTYPE_SCREEN) {  // exit fullscreen mode
+							SDL_WM_ToggleFullScreen(screen);
+							SDL_ShowCursor(1);
+						}
+
+						if (!TheApp->RunPrefsEditor()) {
+							quit_requested = true;
+						}
+
+						if (ThePrefs.DisplayType == DISPTYPE_SCREEN) {  // enter fullscreen mode
+							SDL_ShowCursor(0);
+							SDL_WM_ToggleFullScreen(screen);
+						}
+
+						TheC64->Resume();
 						break;
 
 					case SDLK_F11:	// F11: NMI (Restore)
