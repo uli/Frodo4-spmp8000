@@ -1,7 +1,7 @@
 /*
  *  Prefs.cpp - Global preferences
  *
- *  Frodo (C) 1994-1997,2002-2005 Christian Bauer
+ *  Frodo Copyright (C) Christian Bauer
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -165,7 +165,7 @@ void Prefs::Check(void)
  *  Load preferences from file
  */
 
-void Prefs::Load(char *filename)
+void Prefs::Load(const char *filename)
 {
 	FILE *file;
 	char line[256], keyword[256], value[256];
@@ -279,7 +279,7 @@ void Prefs::Load(char *filename)
  *  true: success, false: error
  */
 
-bool Prefs::Save(char *filename)
+bool Prefs::Save(const char *filename)
 {
 	FILE *file;
 
@@ -368,6 +368,10 @@ bool Prefs::Save(char *filename)
 #include "Prefs_WIN32.h"
 #endif
 
+#ifdef __unix
 #ifdef HAVE_GLADE
 #include "Prefs_glade.h"
+#else
+#include "Prefs_x.h"
+#endif
 #endif

@@ -1,7 +1,7 @@
 /*
  *  Prefs.h - Global preferences
  *
- *  Frodo (C) 1994-1997,2002-2005 Christian Bauer
+ *  Frodo Copyright (C) Christian Bauer
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -52,8 +52,8 @@ public:
 	Prefs();
 	bool ShowEditor(bool startup, char *prefs_name);
 	void Check(void);
-	void Load(char *filename);
-	bool Save(char *filename);
+	void Load(const char *filename);
+	bool Save(const char *filename);
 
 	bool operator==(const Prefs &rhs) const;
 	bool operator!=(const Prefs &rhs) const;
