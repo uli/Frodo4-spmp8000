@@ -437,24 +437,32 @@ private:
 	int play_buf;					// Number of buffer currently playing
 #endif
 
-#ifdef __linux__
+
+#ifdef HAVE_SDL
+	static void buffer_proc(void *cookie, uint8 *buffer, int size);
+#else
+
+# ifdef __linux__
 	int devfd, sndbufsize, buffer_rate;
 	int16 *sound_buffer;
-#endif
+# endif
 
-#ifdef SUN
+# ifdef SUN
 	int fd;
 	audio_info status;
 	uint_t sent_samples,delta_samples;
 	int16 *sound_calc_buf;
-#endif
+# endif
 
-#ifdef __hpux
+# ifdef __hpux
 	int fd;
 	audio_status status;
 	int16 *sound_calc_buf;
 	int linecnt;
-#endif
+# endif
+
+#endif // ndef HAVE_SDL
+
 
 #ifdef __mac__
 	SndChannelPtr chan1;
@@ -1336,8 +1344,15 @@ void DigitalRenderer::calc_buffer(int16 *buf, long count)
 #elif defined(AMIGA)
 #include "SID_Amiga.h"
 
+#elif defined(HAVE_SDL)
+#include "SID_SDL.h"
+# if defined(__linux__)
+# include "SID_catweasel.h"
+# endif
+
 #elif defined(__linux__)
 #include "SID_linux.h"
+#include "SID_catweasel.h"
 
 #elif defined(SUN)
 #include "SID_sun.h"
