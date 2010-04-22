@@ -91,6 +91,7 @@
 		case 0:
 			read_to(pc++, op);
 			state = ModeTab[op];
+			opflags = 0;
 			break;
 
 
@@ -738,9 +739,16 @@
 			read_idle(sp++ | 0x100);
 			state = O_PLP2;
 			break;
-		case O_PLP2:
+		case O_PLP2: {
+			bool old_i_flag = i_flag;
 			pop_flags();
+			if (!old_i_flag && i_flag) {
+				opflags |= OPFLAG_IRQ_DISABLED;
+			} else if (old_i_flag && !i_flag) {
+				opflags |= OPFLAG_IRQ_ENABLED;
+			}
 			Last;
+		}
 
 
 		// Jump/branch group
@@ -842,7 +850,7 @@
 			push_flags(true);
 			i_flag = true;
 #ifndef IS_CPU_1541
-			if (interrupt.intr[INT_NMI]) {			// BRK interrupted by NMI?
+			if (interrupt.intr[INT_NMI]) {  // BRK interrupted by NMI?
 				interrupt.intr[INT_NMI] = false;	// Simulate an edge-triggered input
 				state = 0x0015;						// Jump to NMI sequence
 				break;
@@ -851,9 +859,6 @@
 			state = O_BRK4;
 			break;
 		case O_BRK4:
-#ifndef IS_CPU_1541
-			first_nmi_cycle++;		// Delay NMI
-#endif
 			read_to(0xfffe, pc);
 			state = O_BRK5;
 			break;
@@ -895,10 +900,7 @@
 			Branch(!(n_flag & 0x80));
 
 		case O_BRANCH_NP:	// No page crossed
-			first_irq_cycle++;	// Delay IRQ
-#ifndef IS_CPU_1541
-			first_nmi_cycle++;	// Delay NMI
-#endif
+			opflags |= OPFLAG_INT_DELAYED;
 			read_idle(pc);
 			pc = ar;
 			Last;
@@ -943,11 +945,15 @@
 
 		case O_SEI:
 			read_idle(pc);
+			if (!i_flag)
+				opflags |= OPFLAG_IRQ_DISABLED;
 			i_flag = true;
 			Last;
 
 		case O_CLI:
 			read_idle(pc);
+			if (i_flag)
+				opflags |= OPFLAG_IRQ_ENABLED;
 			i_flag = false;
 			Last;
 

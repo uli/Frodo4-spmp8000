@@ -1,7 +1,7 @@
 /*
  *  CPU1541_SC.cpp - Single-cycle 6502 (1541) emulation
  *
- *  Frodo (C) 1994-1997,2002-2005 Christian Bauer
+ *  Frodo Copyright (C) Christian Bauer
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -99,6 +99,7 @@ MOS6502_1541::MOS6502_1541(C64 *c64, Job1541 *job, C64Display *disp, uint8 *Ram,
 	via2_sr = 0;
 
 	first_irq_cycle = 0;
+	opflags = 0;
 	Idle = false;
 }
 
@@ -577,6 +578,7 @@ void MOS6502_1541::Reset(void)
 
 	// Clear all interrupt lines
 	interrupt.intr_any = 0;
+	opflags = 0;
 
 	// Read reset vector
 	pc = read_word(0xfffc);
@@ -620,10 +622,16 @@ void MOS6502_1541::EmulateCycle(void)
 
 	// Any pending interrupts in state 0 (opcode fetch)?
 	if (!state && interrupt.intr_any) {
-		if (interrupt.intr[INT_RESET])
+		if (interrupt.intr[INT_RESET]) {
 			Reset();
-		else if ((interrupt.intr[INT_VIA1IRQ] || interrupt.intr[INT_VIA2IRQ] || interrupt.intr[INT_IECIRQ]) && (the_c64->CycleCounter-first_irq_cycle >= 2) && !i_flag)
-			state = 0x0008;
+		} else if ((interrupt.intr[INT_VIA1IRQ] || interrupt.intr[INT_VIA2IRQ] || interrupt.intr[INT_IECIRQ]) &&
+				   (!i_flag || (opflags & OPFLAG_IRQ_DISABLED)) && !(opflags & OPFLAG_IRQ_ENABLED)) {
+			uint32 int_delay = (opflags & OPFLAG_INT_DELAYED) ? 1 : 0;  // Taken branches to the same page delay the IRQ
+			if (the_c64->CycleCounter - first_irq_cycle - int_delay >= 2) {
+				state = 0x0008;
+				opflags = 0;
+			}
+		}
 	}
 
 #define IS_CPU_1541

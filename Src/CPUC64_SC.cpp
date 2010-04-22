@@ -1,7 +1,7 @@
 /*
  *  CPUC64_SC.cpp - Single-cycle 6510 (C64) emulation
  *
- *  Frodo (C) 1994-1997,2002-2009 Christian Bauer
+ *  Frodo Copyright (C) Christian Bauer
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -103,6 +103,7 @@ MOS6510::MOS6510(C64 *c64, uint8 *Ram, uint8 *Basic, uint8 *Kernal, uint8 *Char,
 	dfff_byte = 0x55;
 	BALow = false;
 	first_irq_cycle = first_nmi_cycle = 0;
+	opflags = 0;
 }
 
 
@@ -300,7 +301,7 @@ uint8 MOS6510::read_byte(uint16 adr)
  *  $dfa0-$dfff: Emulator identification
  */
 
-const char frodo_id[0x5c] = "FRODO\r(C) 1994-1997 CHRISTIAN BAUER";
+const char frodo_id[0x5c] = "FRODO\r(C) CHRISTIAN BAUER";
 
 uint8 MOS6510::read_emulator_id(uint16 adr)
 {
@@ -558,6 +559,7 @@ void MOS6510::Reset(void)
 	// Clear all interrupt lines
 	interrupt.intr_any = 0;
 	nmi_state = false;
+	opflags = 0;
 
 	// Read reset vector
 	pc = read_word(0xfffc);
@@ -602,13 +604,23 @@ void MOS6510::EmulateCycle(void)
 
 	// Any pending interrupts in state 0 (opcode fetch)?
 	if (!state && interrupt.intr_any) {
-		if (interrupt.intr[INT_RESET])
+		if (interrupt.intr[INT_RESET]) {
 			Reset();
-		else if (interrupt.intr[INT_NMI] && (the_c64->CycleCounter-first_nmi_cycle >= 2)) {
-			interrupt.intr[INT_NMI] = false;	// Simulate an edge-triggered input
-			state = 0x0010;
-		} else if ((interrupt.intr[INT_VICIRQ] || interrupt.intr[INT_CIAIRQ]) && (the_c64->CycleCounter-first_irq_cycle >= 2) && !i_flag)
-			state = 0x0008;
+		} else if (interrupt.intr[INT_NMI]) {
+			uint32 int_delay = (opflags & OPFLAG_INT_DELAYED) ? 1 : 0;  // Taken branches to the same page delay the NMI
+			if (the_c64->CycleCounter - first_nmi_cycle - int_delay >= 2) {
+				interrupt.intr[INT_NMI] = false;	// Simulate an edge-triggered input
+				state = 0x0010;
+				opflags = 0;
+			}
+		} else if ((interrupt.intr[INT_VICIRQ] || interrupt.intr[INT_CIAIRQ]) &&
+				   (!i_flag || (opflags & OPFLAG_IRQ_DISABLED)) && !(opflags & OPFLAG_IRQ_ENABLED)) {
+			uint32 int_delay = (opflags & OPFLAG_INT_DELAYED) ? 1 : 0;  // Taken branches to the same page delay the IRQ
+			if (the_c64->CycleCounter - first_irq_cycle - int_delay >= 2) {
+				state = 0x0008;
+				opflags = 0;
+			}
+		}
 	}
 
 #include "CPU_emulcycle.h"

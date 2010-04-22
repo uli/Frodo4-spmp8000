@@ -1,7 +1,7 @@
 /*
  *  CPUC64.h - 6510 (C64) emulation (line based)
  *
- *  Frodo (C) 1994-1997,2002-2009 Christian Bauer
+ *  Frodo Copyright (C) Christian Bauer
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -143,6 +143,13 @@ private:
 
 #ifdef FRODO_SC
 	uint32 first_irq_cycle, first_nmi_cycle;
+
+	enum {
+		OPFLAG_IRQ_DISABLED = 0x01,
+		OPFLAG_IRQ_ENABLED = 0x02,
+		OPFLAG_INT_DELAYED = 0x04
+	};
+	uint8 opflags;			// Interrupt operation flags
 
 	uint8 state, op;		// Current state and opcode
 	uint16 ar, ar2;			// Address registers
