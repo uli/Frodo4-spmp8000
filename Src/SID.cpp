@@ -1,7 +1,7 @@
 /*
  *  SID.cpp - 6581 emulation
  *
- *  Frodo (C) 1994-1997,2002-2005 Christian Bauer
+ *  Frodo Copyright (C) Christian Bauer
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -354,11 +354,7 @@ struct DRVoice {
 // Renderer class
 class DigitalRenderer : public SIDRenderer {
 public:
-#if defined(__BEOS__) || defined(__riscos__)
 	DigitalRenderer(C64 *c64);
-#else
-	DigitalRenderer();
-#endif
 	virtual ~DigitalRenderer();
 
 	virtual void Reset(void);
@@ -376,6 +372,8 @@ private:
 #else
 	void calc_buffer(int16 *buf, long count);
 #endif
+
+	C64 *the_c64;					// Pointer to C64 object
 
 	bool ready;						// Flag: Renderer has initialized and is ready
 	uint8 volume;					// Master volume
@@ -418,7 +416,6 @@ private:
 
 #ifdef __BEOS__
 	static void buffer_proc(void *cookie, void *buffer, size_t size, const media_raw_audio_format &format);
-	C64 *the_c64;					// Pointer to C64 object
 	BSoundPlayer *the_player;		// Pointer to sound player
 	bool player_stopped;			// Flag: player stopped
 #endif
@@ -491,7 +488,6 @@ private:
 #ifdef __riscos__
 	int linecnt, sndbufsize;
 	uint8 *sound_buffer;
-	C64 *the_c64;
 #endif
 };
 
@@ -822,11 +818,7 @@ const int16 DigitalRenderer::SampleTab[16] = {
  *  Constructor
  */
 
-#if defined(__BEOS__) || defined(__riscos__)
 DigitalRenderer::DigitalRenderer(C64 *c64) : the_c64(c64)
-#else
-DigitalRenderer::DigitalRenderer()
-#endif
 {
 	// Link voices together
 	voice[0].mod_by = &voice[2];
@@ -1384,22 +1376,19 @@ void MOS6581::open_close_renderer(int old_type, int new_type)
 	delete the_renderer;
 
 	// Create new renderer
-	if (new_type == SIDTYPE_DIGITAL)
-#if defined(__BEOS__) || defined(__riscos__)
+	if (new_type == SIDTYPE_DIGITAL) {
 		the_renderer = new DigitalRenderer(the_c64);
-#else
-		the_renderer = new DigitalRenderer;
-#endif
 #ifdef AMIGA
-	else if (new_type == SIDTYPE_SIDCARD)
+	} else if (new_type == SIDTYPE_SIDCARD) {
 		the_renderer = new SIDCardRenderer;
 #endif
 #ifdef __linux__
-	else if (new_type == SIDTYPE_SIDCARD)
+	} else if (new_type == SIDTYPE_SIDCARD) {
 		the_renderer = new CatweaselRenderer;
 #endif
-	else
+	} else {
 		the_renderer = NULL;
+	}
 
 	// Stuff the current register values into the new renderer
 	if (the_renderer != NULL)
