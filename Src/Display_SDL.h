@@ -25,6 +25,14 @@
 
 #include <SDL.h>
 
+#ifdef ENABLE_OPENGL
+#include <GL/glew.h>
+#endif
+
+
+// Display dimensions including drive LEDs etc.
+static const int FRAME_WIDTH = DISPLAY_X;
+static const int FRAME_HEIGHT = DISPLAY_Y + 16;
 
 // Display surface
 static SDL_Surface *screen = NULL;
@@ -51,6 +59,19 @@ enum {
 	green = 20,
 	PALETTE_SIZE = 21
 };
+
+#ifdef ENABLE_OPENGL
+
+// Display texture dimensions
+static const int TEXTURE_SIZE = 512;  // smallest power-of-two that fits DISPLAY_X/Y
+
+// Texture object for VIC palette
+static GLuint palette_tex;
+
+// Texture object for VIC display
+static GLuint vic_tex;
+
+#endif
 
 /*
   C64 keyboard matrix:
@@ -85,6 +106,56 @@ int init_graphics(void)
 }
 
 
+#ifdef ENABLE_OPENGL
+/*
+ *  Set direct projection (GL coordinates = window pixel coordinates)
+ */
+
+static void set_projection()
+{
+	int width = SDL_GetVideoSurface()->w;
+	int height = SDL_GetVideoSurface()->h;
+
+	glViewport(0, 0, width, height);
+	glMatrixMode(GL_PROJECTION);
+	glLoadIdentity();
+
+	float aspect = float(width) / float(height);
+	const float want_aspect = float(FRAME_WIDTH) / float(FRAME_HEIGHT);
+	int left, right, top, bottom;
+	if (aspect > want_aspect) {
+		// Window too wide, center horizontally
+		top = 0; bottom = FRAME_HEIGHT;
+		int diff = (int(FRAME_WIDTH * aspect / want_aspect) - FRAME_WIDTH) / 2;
+		left = -diff;
+		right = FRAME_WIDTH + diff;
+	} else {
+		// Window too high, center vertically
+		left = 0; right = FRAME_WIDTH;
+		int diff = (int(FRAME_HEIGHT * want_aspect / aspect) - FRAME_HEIGHT) / 2;
+		top = -diff;
+		bottom = FRAME_HEIGHT + diff;
+	}
+	glOrtho(left, right, bottom, top, -1, 1);
+
+	glClear(GL_COLOR_BUFFER_BIT);
+}
+
+
+/*
+ *  User resized video display (only possible with OpenGL)
+ */
+
+static void video_resized(int width, int height)
+{
+	uint32 flags = (ThePrefs.DisplayType == DISPTYPE_SCREEN ? SDL_FULLSCREEN : 0);
+	flags |= (SDL_ANYFORMAT | SDL_OPENGL | SDL_RESIZABLE);
+	SDL_SetVideoMode(width, height, 16, flags);
+	set_projection();
+}
+#endif
+
+
 /*
  *  Display constructor
  */
@@ -96,7 +167,150 @@ C64Display::C64Display(C64 *the_c64) : TheC64(the_c64)
 
 	// Open window
 	SDL_WM_SetCaption(VERSION_STRING, "Frodo");
-	screen = SDL_SetVideoMode(DISPLAY_X, DISPLAY_Y + 17, 8, SDL_DOUBLEBUF | (ThePrefs.DisplayType == DISPTYPE_SCREEN ? SDL_FULLSCREEN : 0));
+	uint32 flags = (ThePrefs.DisplayType == DISPTYPE_SCREEN ? SDL_FULLSCREEN : 0);
+
+#ifdef ENABLE_OPENGL
+
+	flags |= (SDL_ANYFORMAT | SDL_OPENGL | SDL_RESIZABLE);
+	SDL_GL_SetAttribute(SDL_GL_RED_SIZE, 5);
+	SDL_GL_SetAttribute(SDL_GL_GREEN_SIZE, 5);
+	SDL_GL_SetAttribute(SDL_GL_BLUE_SIZE, 5);
+	SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
+	SDL_Surface *real_screen = SDL_SetVideoMode(FRAME_WIDTH * 2, FRAME_HEIGHT * 2, 16, flags);
+	if (!real_screen) {
+		fprintf(stderr, "Couldn't initialize OpenGL video output (%s)\n", SDL_GetError());
+		exit(1);
+	}
+
+	// VIC display and UI elements are rendered into an off-screen surface
+	screen = SDL_CreateRGBSurface(SDL_SWSURFACE, FRAME_WIDTH, FRAME_HEIGHT, 8, 0xff, 0xff, 0xff, 0xff);
+
+	// We need OpenGL 2.0 or higher
+	GLenum err = glewInit();
+	if (err != GLEW_OK) {
+		fprintf(stderr, "Couldn't initialize GLEW (%s)\n", glewGetErrorString(err));
+		exit(1);
+	}
+
+	if (!glewIsSupported("GL_VERSION_2_0")) {
+		fprintf(stderr, "Frodo requires OpenGL 2.0 or higher\n");
+		exit(1);
+	}
+
+	// Set direct projection
+	set_projection();
+
+	// Set GL state
+	glShadeModel(GL_FLAT);
+	glDisable(GL_DITHER);
+	glColor4f(1.0, 1.0, 1.0, 1.0);
+
+	// Create fragment shader for emulating a paletted texture
+	GLuint shader = glCreateShader(GL_FRAGMENT_SHADER_ARB);
+	const char * src =
+		"uniform sampler2D screen;"
+		"uniform sampler1D palette;"
+		"uniform float texSize;"
+		"void main()"
+		"{"
+#if 0
+		// Nearest neighbour
+		"  vec4 idx = texture2D(screen, gl_TexCoord[0].st);"
+		"  gl_FragColor = texture1D(palette, idx.r);"
+#else
+		// Linear interpolation
+		// (setting the GL_TEXTURE_MAG_FILTER to GL_LINEAR would interpolate
+		// the color indices which is not what we want; we need to manually
+		// interpolate the palette values instead)
+		"  const float texel = 1.0 / texSize;"
+		"  vec2 st = gl_TexCoord[0].st - vec2(texel * 0.5, texel * 0.5);"
+		"  vec4 idx00 = texture2D(screen, st);"
+		"  vec4 idx01 = texture2D(screen, st + vec2(0, texel));"
+		"  vec4 idx10 = texture2D(screen, st + vec2(texel, 0));"
+		"  vec4 idx11 = texture2D(screen, st + vec2(texel, texel));"
+		"  float s1 = fract(st.s * texSize);"
+		"  float s0 = 1.0 - s1;"
+		"  float t1 = fract(st.t * texSize);"
+		"  float t0 = 1.0 - t1;"
+		"  vec4 color00 = texture1D(palette, idx00.r) * s0 * t0;"
+		"  vec4 color01 = texture1D(palette, idx01.r) * s0 * t1;"
+		"  vec4 color10 = texture1D(palette, idx10.r) * s1 * t0;"
+		"  vec4 color11 = texture1D(palette, idx11.r) * s1 * t1;"
+		"  gl_FragColor = color00 + color01 + color10 + color11;"
+#endif
+		"}";
+	glShaderSource(shader, 1, &src, NULL);
+	glCompileShader(shader);
+
+	GLint status;
+	glGetShaderiv(shader, GL_COMPILE_STATUS, &status);
+	if (status == GL_FALSE) {
+		GLint logLength = 0;
+		glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &logLength);
+		if (logLength > 0) {
+			GLchar *log = (GLchar *)malloc(logLength);
+			GLint actual;
+			glGetShaderInfoLog(shader, logLength, &actual, log);
+			fprintf(stderr, "%s\n", log);
+			exit(1);
+		}
+	}
+   
+	GLuint program = glCreateProgram();
+	glAttachShader(program, shader);
+	glLinkProgram(program);
+	glUseProgram(program);
+
+	glUniform1f(glGetUniformLocation(program, "texSize"), float(TEXTURE_SIZE));
+
+	// Create VIC display texture (8-bit color index in the red channel)
+	uint8 *tmp = (uint8 *)malloc(TEXTURE_SIZE * TEXTURE_SIZE);
+	memset(tmp, 0, TEXTURE_SIZE * TEXTURE_SIZE);
+
+	glGenTextures(1, &vic_tex);
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, vic_tex);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);  // don't interpolate color index values
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, TEXTURE_SIZE, TEXTURE_SIZE, 0, GL_RED, GL_UNSIGNED_BYTE, tmp);
+	glUniform1i(glGetUniformLocation(program, "screen"), 0);
+
+	free(tmp);
+
+	// Create VIC palette texture
+	tmp = (uint8 *)malloc(256 * 3);
+	memset(tmp, 0xff, 256 * 3);
+	for (int i=0; i<16; ++i) {
+		tmp[i*3+0] = palette_red[i & 0x0f];
+		tmp[i*3+1] = palette_green[i & 0x0f];
+		tmp[i*3+2] = palette_blue[i & 0x0f];
+	}
+	tmp[fill_gray*3+0] = tmp[fill_gray*3+1] = tmp[fill_gray*3+2] = 0xd0;
+	tmp[shine_gray*3+0] = tmp[shine_gray*3+1] = tmp[shine_gray*3+2] = 0xf0;
+	tmp[shadow_gray*3+0] = tmp[shadow_gray*3+1] = tmp[shadow_gray*3+2] = 0x80;
+	tmp[red*3+0] = 0xf0;
+	tmp[red*3+1] = tmp[red*3+2] = 0;
+	tmp[green*3+1] = 0xf0;
+	tmp[green*3+0] = tmp[green*3+2] = 0;
+
+	glGenTextures(1, &palette_tex);
+	glActiveTexture(GL_TEXTURE1);
+	glBindTexture(GL_TEXTURE_1D, palette_tex);
+	glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);  // don't interpolate palette entries
+	glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexImage1D(GL_TEXTURE_1D, 0, GL_RGBA8, 256, 0, GL_RGB, GL_UNSIGNED_BYTE, tmp);
+	glUniform1i(glGetUniformLocation(program, "palette"), 1);
+
+	free(tmp);
+
+#else
+
+	flags |= (SDL_HWSURFACE | SDL_DOUBLEBUF);
+	screen = SDL_SetVideoMode(FRAME_WIDTH, FRAME_HEIGHT, 8, flags);
+
+#endif
 
 	// Hide mouse pointer in fullscreen mode
 	if (ThePrefs.DisplayType == DISPTYPE_SCREEN)
@@ -144,6 +358,7 @@ C64Display::~C64Display()
 
 void C64Display::NewPrefs(Prefs *prefs)
 {
+	// Unused, we handle fullscreen/window mode switches in PollKeyboard()
 }
 
 
@@ -205,8 +420,30 @@ void C64Display::Update(void)
 	draw_string(screen, DISPLAY_X * 4/5 + 8, DISPLAY_Y + 4, "D\x12 11", black, fill_gray);
 	draw_string(screen, 24, DISPLAY_Y + 4, speedometer_string, black, fill_gray);
 
+#ifdef ENABLE_OPENGL
+	// Load screen to texture
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, vic_tex);
+	glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, FRAME_WIDTH, FRAME_HEIGHT, GL_RED, GL_UNSIGNED_BYTE, screen->pixels);
+
+	// Draw textured rectangle
+	glBegin(GL_QUADS);
+		glTexCoord2f(0.0, 0.0);
+		glVertex2f(0.0, 0.0);
+		glTexCoord2f(float(FRAME_WIDTH) / TEXTURE_SIZE, 0.0);
+		glVertex2f(float(FRAME_WIDTH), 0.0);
+		glTexCoord2f(float(FRAME_WIDTH) / TEXTURE_SIZE, float(FRAME_HEIGHT) / TEXTURE_SIZE);
+		glVertex2f(float(FRAME_WIDTH), float(FRAME_HEIGHT));
+		glTexCoord2f(0.0, float(FRAME_HEIGHT) / TEXTURE_SIZE);
+		glVertex2f(0.0, float(FRAME_HEIGHT));
+	glEnd();
+
+	// Update display
+	SDL_GL_SwapBuffers();
+#else
 	// Update display
 	SDL_Flip(screen);
+#endif
 }
 
 
@@ -448,17 +685,17 @@ void C64Display::PollKeyboard(uint8 *key_matrix, uint8 *rev_matrix, uint8 *joyst
 					case SDLK_F10:	// F10: Prefs/Quit
 						TheC64->Pause();
 						if (ThePrefs.DisplayType == DISPTYPE_SCREEN) {  // exit fullscreen mode
-							SDL_WM_ToggleFullScreen(screen);
+							SDL_WM_ToggleFullScreen(SDL_GetVideoSurface());
 							SDL_ShowCursor(1);
 						}
 
 						if (!TheApp->RunPrefsEditor()) {
 							quit_requested = true;
-						}
-
-						if (ThePrefs.DisplayType == DISPTYPE_SCREEN) {  // enter fullscreen mode
-							SDL_ShowCursor(0);
-							SDL_WM_ToggleFullScreen(screen);
+						} else {
+							if (ThePrefs.DisplayType == DISPTYPE_SCREEN) {  // enter fullscreen mode
+								SDL_ShowCursor(0);
+								SDL_WM_ToggleFullScreen(SDL_GetVideoSurface());
+							}
 						}
 
 						TheC64->Resume();
@@ -502,6 +739,13 @@ void C64Display::PollKeyboard(uint8 *key_matrix, uint8 *rev_matrix, uint8 *joyst
 				else
 					translate_key(event.key.keysym.sym, true, key_matrix, rev_matrix, joystick);
 				break;
+
+#ifdef ENABLE_OPENGL
+			// Window resized
+			case SDL_VIDEORESIZE:
+				video_resized(event.resize.w, event.resize.h);
+				break;
+#endif
 
 			// Quit Frodo
 			case SDL_QUIT:

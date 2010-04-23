@@ -1,6 +1,6 @@
 dnl Process this file with autoconf to produce a configure script.
 
-AC_INIT(Frodo, 4.2)
+AC_INIT([Frodo], [4.2])
 AC_CONFIG_SRCDIR(main.cpp)
 AC_PREREQ(2.52)
 AC_CONFIG_HEADER(sysconfig.h)
@@ -12,6 +12,9 @@ AC_PROG_CPP
 AC_PROG_MAKE_SET
 AC_PROG_INSTALL
 PKG_PROG_PKG_CONFIG
+
+dnl Configure options.
+AC_ARG_ENABLE(opengl, [  --enable-opengl         use SDL/OpenGL for rendering [default=yes]], , enable_opengl=yes)
 
 dnl -fomit-frame-pointer makes things faster
 if [[ x"$GXX" = "xyes" ]]; then
@@ -103,6 +106,23 @@ elif [[ x"$HAVE_SDL" = "xyes" ]]; then
   TARGET=sdl
   CFLAGS="$CFLAGS $SDL_CFLAGS -DHAVE_SDL"
   LIBS="$LIBS $SDL_LIBS"
+  if [[ "x$enable_opengl" = "xyes" ]]; then
+    AC_MSG_CHECKING(for OpenGL support)
+    have_opengl=no
+    AC_TRY_COMPILE([
+     #include <GL/glew.h>
+    ],[
+    ],[
+    have_opengl=yes
+    ])
+    AC_MSG_RESULT($have_opengl)
+    if test x$have_opengl = xyes; then
+      AC_DEFINE(ENABLE_OPENGL, 1, [OpenGL support is enabled])
+      LIBS="$LIBS -lGLEW"
+    else
+      AC_MSG_WARN([Could not find OpenGL, ignoring --enable-opengl.])
+    fi
+  fi
 else
   AC_MSG_RESULT([X Window System])
   TARGET=x11
