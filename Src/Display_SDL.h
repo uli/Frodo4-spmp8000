@@ -210,7 +210,8 @@ C64Display::C64Display(C64 *the_c64) : TheC64(the_c64)
 	const char * src =
 		"uniform sampler2D screen;"
 		"uniform sampler1D palette;"
-		"uniform float texSize;"
+		"const float texSize = 512.0;"  // texture size
+		"const float texel = 1.0 / texSize;"
 		"void main()"
 		"{"
 #if 0
@@ -222,21 +223,15 @@ C64Display::C64Display(C64 *the_c64) : TheC64(the_c64)
 		// (setting the GL_TEXTURE_MAG_FILTER to GL_LINEAR would interpolate
 		// the color indices which is not what we want; we need to manually
 		// interpolate the palette values instead)
-		"  const float texel = 1.0 / texSize;"
 		"  vec2 st = gl_TexCoord[0].st - vec2(texel * 0.5, texel * 0.5);"
 		"  vec4 idx00 = texture2D(screen, st);"
 		"  vec4 idx01 = texture2D(screen, st + vec2(0, texel));"
 		"  vec4 idx10 = texture2D(screen, st + vec2(texel, 0));"
 		"  vec4 idx11 = texture2D(screen, st + vec2(texel, texel));"
-		"  float s1 = fract(st.s * texSize);"
-		"  float s0 = 1.0 - s1;"
-		"  float t1 = fract(st.t * texSize);"
-		"  float t0 = 1.0 - t1;"
-		"  vec4 color00 = texture1D(palette, idx00.r) * s0 * t0;"
-		"  vec4 color01 = texture1D(palette, idx01.r) * s0 * t1;"
-		"  vec4 color10 = texture1D(palette, idx10.r) * s1 * t0;"
-		"  vec4 color11 = texture1D(palette, idx11.r) * s1 * t1;"
-		"  gl_FragColor = color00 + color01 + color10 + color11;"
+		"  vec2 f = fract(st * texSize);"
+		"  vec4 color0 = mix(texture1D(palette, idx00.r), texture1D(palette, idx01.r), f.y);"
+		"  vec4 color1 = mix(texture1D(palette, idx10.r), texture1D(palette, idx11.r), f.y);"
+		"  gl_FragColor = mix(color0, color1, f.x);"
 #endif
 		"}";
 	glShaderSource(shader, 1, &src, NULL);
@@ -260,8 +255,6 @@ C64Display::C64Display(C64 *the_c64) : TheC64(the_c64)
 	glAttachShader(program, shader);
 	glLinkProgram(program);
 	glUseProgram(program);
-
-	glUniform1f(glGetUniformLocation(program, "texSize"), float(TEXTURE_SIZE));
 
 	// Create VIC display texture (8-bit color index in the red channel)
 	uint8 *tmp = (uint8 *)malloc(TEXTURE_SIZE * TEXTURE_SIZE);
