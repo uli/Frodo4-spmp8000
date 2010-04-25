@@ -1,7 +1,7 @@
 /*
  *  CIA.h - 6526 emulation
  *
- *  Frodo (C) 1994-1997,2002-2005 Christian Bauer
+ *  Frodo Copyright (C) Christian Bauer
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -67,10 +67,14 @@ protected:
 	     tb_cnt_ta;		// Flag: Timer B is counting underflows of Timer A
 
 #ifdef FRODO_SC
+	uint8 timer_on_pb(uint8 prb);
+
 	bool ta_irq_next_cycle,		// Flag: Trigger TA IRQ in next cycle
 		 tb_irq_next_cycle,		// Flag: Trigger TB IRQ in next cycle
 		 has_new_cra,			// Flag: New value for CRA pending
-		 has_new_crb;			// Flag: New value for CRB pending
+		 has_new_crb,			// Flag: New value for CRB pending
+		 ta_toggle,				// TA output to PB6 toggle state
+		 tb_toggle;				// TB output to PB7 toggle state
 	char ta_state, tb_state;	// Timer A/B states
 	uint8 new_cra, new_crb;		// New values for CRA/CRB
 #endif

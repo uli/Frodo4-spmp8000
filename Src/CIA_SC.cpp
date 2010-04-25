@@ -94,6 +94,7 @@ void MOS6526::Reset(void)
 
 	ta_irq_next_cycle = tb_irq_next_cycle = false;
 	has_new_cra = has_new_crb = false;
+	ta_toggle = tb_toggle = false;
 	ta_state = tb_state = T_STOP;
 }
 
@@ -200,6 +201,36 @@ void MOS6526::SetState(MOS6526State *cs)
 
 
 /*
+ *  Output TA/TB to PB6/7
+ */
+
+inline uint8 MOS6526::timer_on_pb(uint8 prb)
+{
+	if (cra & 0x02) {
+
+		// TA output to PB6
+		if ((cra & 0x04) ? ta_toggle : ta_irq_next_cycle) {
+			prb |= 0x40;
+		} else {
+			prb &= 0xbf;
+		}
+	}
+
+	if (crb & 0x02) {
+
+		// TB output to PB7
+		if ((crb & 0x04) ? tb_toggle : tb_irq_next_cycle) {
+			prb |= 0x80;
+		} else {
+			prb &= 0x7f;
+		}
+	}
+
+	return prb;
+}
+
+
+/*
  *  Read from register (CIA 1)
  */
 
@@ -228,7 +259,13 @@ uint8 MOS6526_1::ReadRegister(uint16 adr)
 			if (!(tst & 0x20)) ret &= KeyMatrix[5];
 			if (!(tst & 0x40)) ret &= KeyMatrix[6];
 			if (!(tst & 0x80)) ret &= KeyMatrix[7];
-			return (ret | (prb & ddrb)) & Joystick1;
+			ret = (ret | (prb & ddrb)) & Joystick1;
+
+			// TA/TB output to PB enabled?
+			if ((cra | crb) & 0x02)
+				ret = timer_on_pb(ret);
+
+			return ret;
 		}
 		case 0x02: return ddra;
 		case 0x03: return ddrb;
@@ -264,7 +301,15 @@ uint8 MOS6526_2::ReadRegister(uint16 adr)
 		case 0x00:
 			return (pra | ~ddra) & 0x3f
 				| IECLines & the_cpu_1541->IECLines;
-		case 0x01: return prb | ~ddrb;
+		case 0x01: {
+			uint8 ret = prb | ~ddrb;
+
+			// TA/TB output to PB enabled?
+			if ((cra | crb) & 0x02)
+				ret = timer_on_pb(ret);
+
+			return ret;
+		}
 		case 0x02: return ddra;
 		case 0x03: return ddrb;
 		case 0x04: return ta;
@@ -364,7 +409,7 @@ void MOS6526_1::WriteRegister(uint16 adr, uint8 byte)
 				int_mask |= byte & 0x7f;
 			else
 				int_mask &= ~byte;
-			if (icr & int_mask & 0x1f) { // Trigger IRQ if pending
+			if (icr & int_mask & 0x7f) { // Trigger IRQ if pending
 				icr |= 0x80;
 				the_cpu->TriggerCIAIRQ();
 			}
@@ -532,6 +577,7 @@ ta_interrupt:
 				ta = latcha;			// Reload timer
 				ta_irq_next_cycle = true; // Trigger interrupt in next cycle
 				icr |= 1;				// But set ICR bit now
+				ta_toggle = !ta_toggle;	// Toggle PB6 output
 
 				if (cra & 8) {			// One-shot?
 					cra &= 0xfe;		// Yes, stop timer
@@ -550,6 +596,7 @@ ta_idle:
 			case T_STOP:
 			case T_LOAD_THEN_STOP:
 				if (new_cra & 1) {		// Timer started, wasn't running
+					ta_toggle = true;	// Starting the timer resets the toggle bit
 					if (new_cra & 0x10)	// Force load
 						ta_state = T_LOAD_THEN_WAIT_THEN_COUNT;
 					else				// No force load
@@ -625,6 +672,7 @@ tb_interrupt:
 				tb = latchb;			// Reload timer
 				tb_irq_next_cycle = true; // Trigger interrupt in next cycle
 				icr |= 2;				// But set ICR bit now
+				tb_toggle = !tb_toggle;	// Toggle PB7 output
 
 				if (crb & 8) {			// One-shot?
 					crb &= 0xfe;		// Yes, stop timer
@@ -642,6 +690,7 @@ tb_idle:
 			case T_STOP:
 			case T_LOAD_THEN_STOP:
 				if (new_crb & 1) {		// Timer started, wasn't running
+					tb_toggle = true;	// Starting the timer resets the toggle bit
 					if (new_crb & 0x10)	// Force load
 						tb_state = T_LOAD_THEN_WAIT_THEN_COUNT;
 					else				// No force load
