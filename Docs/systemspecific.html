@@ -1,12 +1,25 @@
 <HTML>
 <HEAD>
-<TITLE>System specific notes</TITLE>
+<TITLE>Starting and quitting</TITLE>
 </HEAD>
 <BODY>
 
-<H1>System specific notes</H1>
+<H1>Starting and quitting</H1>
 
 <HR>
+
+<H2>Unix</H2>
+
+Frodo accepts a single argument when started from the shell: The name of a
+preferences file to load instead of the default "~/.frodorc".<P>
+
+At first, the window for the emulation <A HREF="settings.html">settings</A>
+appears. The actual emulation is started by a click on "OK". Then the <A
+HREF="emulwindow.html">emulation</A> window appears in which the C64
+startup message is displayed.<P>
+
+To quit Frodo, either close the emulation window, or press F10 to bring up
+the settings window and select "Quit".
 
 <H2>BeOS</H2>
 
@@ -24,28 +37,9 @@ item.<P>
 
 Frodo should be run in a 256-color workspace for maximum speed.<P>
 
-Sampled sounds are only played correctly if "Limit Speed" is on and "Draw every
-n-th frame" is set to "1" and if the emulation can sustain 100% speed.<P>
-
-<H2>Unix</H2>
-
-Frodo accepts a single argument when started from the shell: The name of a
-preferences file to load instead of the default "~/.frodorc".<P>
-
-First the <A HREF="emulwindow.html">emulation</A> window appears in which
-the C64 startup message is displayed. If you have Tcl/Tk 4.1 installed
-and the file "TkGui.tcl" is in the current directory, a second window opens
-for the emulation <A HREF="settings.html">settings</A>.<P>
-
-If you have no Tcl/Tk or are using the SVGAlib version under Linux, you
-have to copy the included "Frodo Prefs" file to "~/.frodorc" and edit it manually
-(read "Prefs.cpp" to find out about the syntax of the settings file).
-
-You can quit from the running emulation by pressing F10.<P>
-
-Sound is currently only supported under Linux, HP-UX and Solaris 2.x. Sampled
-sounds are only played correctly if "Limit Speed" is on and "Draw every n-th frame"
-is set to "1" and if the emulation can sustain 100% speed.<P>
+Sampled sounds are only played correctly if "Limit Speed" is on and "Draw
+every n-th frame" is set to "1" and if the emulation can sustain 100%
+speed.<P>
 
 <H2>MacOS</H2>
 
