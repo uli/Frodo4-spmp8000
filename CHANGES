@@ -1,11 +1,14 @@
 Changes from V4.1b to V4.2:
  - Changed license to GPL
- - "plain" Frodo removed, "Frodo PC" renamed to "Frodo"
+ - "Plain" Frodo removed, "Frodo PC" renamed to "Frodo"
  - ROMs are built into the Frodo executable
- - implemented write access to disk image files (D64/X64)
+ - Implemented write access to disk image files (D64/X64)
  - Voice 3 mute works
+ - Unix: added Gtk preferences editor
  - Unix: removed obsolete Linux joystick code, added SDL joystick support
  - Unix: added fullscreen display with SDL
+ - Unix: added resizable window display with SDL/OpenGL
+ - Unix: added SDL sound support
  - Linux: added support for Catweasel SID
  - Linux: more accurate timing
  - BeOS: added support for digital joysticks connected to the GeekPort
