@@ -23,6 +23,7 @@ int main(int argc, char **argv)
 
 	libgame_chdir_game();
 
+	libgame_set_debug(0);
 	//usbdbg_wait_for_plug();
 
 #if 0
