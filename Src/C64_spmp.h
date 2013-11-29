@@ -298,15 +298,28 @@ void C64::open_close_joysticks(int oldjoy1, int oldjoy2, int newjoy1, int newjoy
 #endif
 }
 
-
+#include "spmp_menu_input.h"
+int current_joystick = 1;
+extern int options_enabled;
+extern int keyboard_enabled;
 /*
  *  Poll joystick port, return CIA mask
  */
 
 uint8 C64::poll_joystick(int port)
 {
-	if (port == 0)
-		return 0xff;
+	uint8 j = 0xff;
+
+	if(port!=current_joystick) return j;
+
+	if(options_enabled||keyboard_enabled) return j;
+
+	if(joy_state&LEFT_PRESSED) j&=0xfb;
+	if(joy_state&RIGHT_PRESSED) j&=0xf7;
+	if(joy_state&UP_PRESSED) j&=0xfe;
+	if(joy_state&DOWN_PRESSED) j&=0xfd;
+	if(joy_state&FIRE_PRESSED) j&=0xef;
+	return j;
 
 #if 0
 	if (game_open && port_allocated) {

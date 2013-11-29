@@ -68,7 +68,7 @@ Frodo::~Frodo()
 /*
  *  Arguments processed, run emulation
  */
-
+extern uint8 *font;
 void Frodo::ReadyToRun(void)
 {
 	getcwd(AppDirPath, 256);
@@ -84,6 +84,7 @@ void Frodo::ReadyToRun(void)
 	TheC64 = new C64;
 	printf("running frodo\n");
 	load_rom_files();
+	font = TheC64->Char;
 	printf("basic rom %p %0x\n", TheC64->Basic, TheC64->Basic[0]);
 	printf("kernal rom %p %0x\n", TheC64->Kernal, TheC64->Kernal[0]);
 	printf("char rom %p %0x\n", TheC64->Char, TheC64->Char[0]);

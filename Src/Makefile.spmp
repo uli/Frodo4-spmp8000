@@ -16,7 +16,7 @@ LIBRARIES =
 
 ## Files
 OBJS    = main.o Display.o Prefs.o SID.o REU.o IEC.o 1541fs.o \
-          1541d64.o 1541t64.o 1541job.o SAM.o
+          1541d64.o 1541t64.o 1541job.o SAM.o spmp_menu.o spmp_menu_input.o
 # standard
 OBJS  += C64.o CPUC64.o VIC.o CIA.o CPU1541.o
 # PC

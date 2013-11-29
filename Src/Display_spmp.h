@@ -11,6 +11,8 @@
 
 #include <libgame.h>
 
+#include "spmp_menu_input.h"
+#include "spmp_menu.h"
 
 // Colors for speedometer/drive LEDs
 enum {
@@ -41,14 +43,30 @@ enum {
 #define MATRIX(a,b) (((a) << 3) | (b))
 
 
-/*
- *  Open window
- */
-
-uint8 *c64_screen;
 emu_graph_params_t gp;
 uint16_t _palette[256];
 void *original_shadow;
+
+emu_keymap_t keymap;
+uint32_t keys;
+
+static void map_buttons(void)
+{
+    libgame_buttonmap_t bm[] = {
+        {"SAM", EMU_KEY_START},
+        {"Keyboard", EMU_KEY_SELECT},	/* aka SELECT */
+        {"OK", EMU_KEY_O},		/* aka B */
+        {"Cancel", EMU_KEY_X},		/* aka X */
+        {"Edit", EMU_KEY_SQUARE},	/* aka A */
+        {"Delete", EMU_KEY_TRIANGLE},	/* aka Y */
+        {"L", EMU_KEY_L},
+        {"R", EMU_KEY_R},
+        {0, 0}
+    };
+    libgame_map_buttons("frodo.map", &keymap, bm);
+}
+
+static int keystate[256];
 
 int init_graphics(void)
 {
@@ -76,7 +94,13 @@ int init_graphics(void)
     /* Disable v-sync, we don't have that much time to waste. */
         original_shadow = gDisplayDev->getShadowBuffer();
             gDisplayDev->setShadowBuffer(gDisplayDev->getFrameBuffer());
-            
+
+        keymap.controller = 0;
+        emuIfKeyInit(&keymap);
+	if (libgame_load_buttons("frodo.map", &keymap) < 0) {
+		map_buttons();
+	}            
+	for(int i=0; i<256; i++) keystate[i]=0;
 #endif
 
 	return 1;
@@ -139,6 +163,11 @@ void C64Display::NewPrefs(Prefs *prefs)
  *  Redraw bitmap
  */
 
+extern int keyboard_enabled;
+extern int options_enabled;
+extern int status_enabled;
+void draw_ui(C64 *);
+
 void C64Display::Update(void)
 {
 #if 0
@@ -199,7 +228,9 @@ void C64Display::Update(void)
 #else
 	//printf("display update\n");
 	draw_string(24, DISPLAY_Y - 8, speedometer_string, black, fill_gray);
-	printf("speed %s\n", speedometer_string);
+	//printf("speed %s\n", speedometer_string);
+                if(keyboard_enabled||options_enabled||status_enabled)
+                                        draw_ui(TheC64);
 	emuIfGraphShow();
 #endif
 }
@@ -263,7 +294,7 @@ void C64Display::pulse_handler(...)
 void C64Display::Speedometer(int speed)
 {
 	static int delay = 0;
-	printf("setting speedo %d\n", speed);
+	//printf("setting speedo %d\n", speed);
 	if (delay >= 20) {
 		delay = 0;
 		sprintf(speedometer_string, "%d%%", speed);
@@ -432,17 +463,88 @@ static void translate_key(SDLKey key, bool key_up, uint8 *key_matrix, uint8 *rev
 }
 #endif
 
+void KeyPress(int key, uint8 *key_matrix, uint8 *rev_matrix) {
+	int c64_byte, c64_bit, shifted;
+	if(!keystate[key]) {
+		keystate[key]=1;
+		c64_byte=key>>3;
+		c64_bit=key&7;
+		shifted=key&128;
+		c64_byte&=7;
+		if(shifted) {
+			key_matrix[6] &= 0xef;
+			rev_matrix[4] &= 0xbf;
+		}
+		key_matrix[c64_byte]&=~(1<<c64_bit);
+		rev_matrix[c64_bit]&=~(1<<c64_byte);
+	}
+}
+
+void KeyRelease(int key, uint8 *key_matrix, uint8 *rev_matrix) {
+	int c64_byte, c64_bit, shifted;
+	if(keystate[key]) {
+		keystate[key]=0;
+		c64_byte=key>>3;
+		c64_bit=key&7;
+		shifted=key&128;
+		c64_byte&=7;
+		if(shifted) {
+			key_matrix[6] |= 0x10;
+			rev_matrix[4] |= 0x40;
+		}
+		key_matrix[c64_byte]|=(1<<c64_bit);
+		rev_matrix[c64_bit]|=(1<<c64_byte);
+	}
+}
+
+extern void poll_input(void);
+
 void C64Display::PollKeyboard(uint8 *key_matrix, uint8 *rev_matrix, uint8 *joystick)
 {
 #if 1
-	printf("poll keyboard sf %d\n", ThePrefs.SkipFrames);
-   ge_key_data_t keys;
-       NativeGE_getKeyInput4Ntv(&keys);
-       if (keys.keys & GE_KEY_X)
-       	TheC64->Reset();
-       	memset(key_matrix, 0xff, 8);
-	memset(rev_matrix, 0xff, 8);
-	*joystick = 0xff;
+	//printf("poll keyboard sf %d\n", ThePrefs.SkipFrames);
+	ge_key_data_t bogus_keys;
+	NativeGE_getKeyInput4Ntv(&bogus_keys);
+	//keys = emuIfKeyGetInput(&keymap);
+	poll_input();
+
+	// check button-mapped keys
+	if(bkey_pressed) {
+		printf("bkey %d pressed\n", bkey);
+		KeyPress(bkey, key_matrix, rev_matrix);
+		bkey_pressed=0;
+	}
+	if(bkey_released) {
+		printf("bkey %d released\n", bkey);
+		KeyRelease(bkey, key_matrix, rev_matrix);
+		bkey_released=0;
+	}
+
+	// check virtual keyboard
+	if(keyboard_enabled) {
+		if(vkey_pressed) {
+		printf("vkey %d pressed\n", vkey);
+			KeyPress(vkey, key_matrix, rev_matrix);
+			vkey_pressed=0;
+		}
+		if(vkey_released) {
+		printf("vkey %d released\n", vkey);
+			KeyRelease(vkey, key_matrix, rev_matrix);
+			vkey_released=0;
+			//vkey=0;
+		}
+	}
+#if 0
+	if (keys & keymap.scancode[EMU_KEY_SELECT])
+		TheC64->Reset();
+	else if (keys & keymap.scancode[EMU_KEY_START])
+		SAM(TheC64);
+#endif
+
+	//memset(key_matrix, 0xff, 8);
+	//memset(rev_matrix, 0xff, 8);
+	//*joystick = 0xff;
+
 #else
 	SDL_Event event;
 	while (SDL_PollEvent(&event)) {
