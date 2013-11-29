@@ -87,6 +87,15 @@ FSDrive::~FSDrive()
 /*
  *  Change emulation directory
  */
+#ifdef SPMP
+#include <libgame.h>
+#define opendir _ecos_opendir
+#define closedir _ecos_closedir
+#define DIR _ecos_DIR
+#define readdir _ecos_readdir
+#define dirent _ecos_dirent
+#define chdir _ecos_chdir
+#endif
 
 bool FSDrive::change_dir(char *dirpath)
 {

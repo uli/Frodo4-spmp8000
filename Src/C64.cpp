@@ -729,3 +729,6 @@ bool C64::LoadSnapshot(char *filename)
 #ifdef __riscos__
 #include "C64_Acorn.h"
 #endif
+#ifdef SPMP
+#include "C64_spmp.h"
+#endif

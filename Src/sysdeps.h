@@ -193,7 +193,7 @@ typedef long long int64;
 #error No 8 byte type, you lose.
 #endif
 
-#if SIZEOF_VOID_P == 4
+#if !defined(SIZEOF_VOID_P) || SIZEOF_VOID_P == 4
 typedef uint32 uintptr;
 typedef int32 intptr;
 #elif SIZEOF_VOID_P == 8

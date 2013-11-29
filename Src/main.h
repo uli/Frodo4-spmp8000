@@ -214,6 +214,27 @@ private:
 
 #endif
 
+/*
+ *  SPMP specific stuff
+ */
+
+#ifdef SPMP
+
+class Frodo
+{
+  public:
+  Frodo(void);
+  ~Frodo(void);
+  void ReadyToRun(void);
+
+  C64 *TheC64;
+
+  private:
+  void load_rom(const char *which, const char *path, uint8 *where, size_t size, const uint8 *builtin);
+  void load_rom_files();
+};
+
+#endif
 // Global C64 object
 extern C64 *TheC64;
 

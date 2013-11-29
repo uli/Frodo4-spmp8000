@@ -1,0 +1,36 @@
+# Makefile.in for Frodo (AmigaOS with GCC)
+# Copyright (C) 1995-1997 Christian Bauer <cbauer@iphcip1.physik.uni-mainz.de>
+
+LIBSPMP8K = ../../..
+
+TARGET = frodo
+
+## Version information
+VERSION   = 4
+REVISION  = 1
+
+CFLAGS    = -O3 -fomit-frame-pointer -funroll-loops -I./ -DSPMP -W -Wall -Wno-write-strings
+LIBRARIES =
+
+.SUFFIXES: .o .cpp .c .h
+
+## Files
+OBJS    = main.o Display.o Prefs.o SID.o REU.o IEC.o 1541fs.o \
+          1541d64.o 1541t64.o 1541job.o SAM.o
+# standard
+OBJS  += C64.o CPUC64.o VIC.o CIA.o CPU1541.o
+# PC
+#OBJS  += C64_PC.o CPUC64_PC.o VIC.o CIA.o CPU1541_PC.o
+#CFLAGS += -DPRECISE_CPU_CYCLES=1 -DPRECISE_CIA_CYCLES=1 -DPC_IS_POINTER=0
+# SC
+#OBJS  += C64_SC.o CPUC64_SC.o VIC_SC.o CIA_SC.o CPU1541_SC.o CPU_common.o
+#CFLAGS += -DFRODO_SC
+
+include $(LIBSPMP8K)/main.cfg
+include $(LIBGAME)/libgame.mk
+LD=$(CXX)
+
+install:
+	spmount
+	cp $(TARGET).bin /spmp/GAME/
+	spoff

@@ -106,4 +106,6 @@ void C64Display::UpdateLEDs(int l0, int l1, int l2, int l3)
 #include "Display_WIN32.h"
 #elif defined(__riscos__)
 #include "Display_Acorn.h"
+#elif defined(SPMP)
+#include "Display_spmp.h"
 #endif

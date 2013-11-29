@@ -108,3 +108,7 @@ void Frodo::load_rom_files()
 #ifdef __riscos__
 #include "main_Acorn.h"
 #endif
+
+#ifdef SPMP
+#include "main_spmp.h"
+#endif
