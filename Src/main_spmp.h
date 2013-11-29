@@ -4,6 +4,8 @@
  *  Frodo (C) 1994-1997,2002 Christian Bauer
  */
 
+#define USBDEBUG
+
 #include "Version.h"
 #include <libgame.h>
 #include <usbdbg.h>
@@ -17,8 +19,10 @@ extern int init_graphics(void);
 
 int main(int argc, char **argv)
 {
+#ifdef USBDEBUG
 	usbdbg_init();
 	usbdbg_redirect_stdio(1);
+#endif
 	//usbdbg_blocking = 1;
 
 	libgame_chdir_game();
@@ -26,8 +30,8 @@ int main(int argc, char **argv)
 	libgame_set_debug(0);
 	//usbdbg_wait_for_plug();
 
-#if 0
 	stdout = fopen("frodo_stdout.txt", "w");
+#ifndef USBDEBUG
 	setbuf(stdout, NULL);
 	stderr = fopen("frodo_stderr.txt", "w");
 	setbuf(stderr, NULL);
@@ -44,7 +48,7 @@ int main(int argc, char **argv)
 	the_app->ReadyToRun();
 	delete the_app;
 
-#if 0
+#ifndef USBDEBUG
 	fclose(stdout);
 	fclose(stderr);
 #endif
@@ -63,7 +67,9 @@ Frodo::Frodo()
 
 Frodo::~Frodo()
 {
+#ifdef USBDEBUG
 	usbdbg_puts("Frodo dtor\n");
+#endif
 }
 
 /*
