@@ -99,7 +99,9 @@ using std::vector;
 #if HAVE_DIRENT_H
 # include <dirent.h>
 #else
+#ifndef SPMP
 # define dirent direct
+#endif
 # if HAVE_SYS_NDIR_H
 #  include <sys/ndir.h>
 # endif
