@@ -828,9 +828,9 @@ void draw_options(C64 *TheC64) {
 	option_txt[NUM_OPTIONS+3]=	"                            ";
 	option_txt[NUM_OPTIONS+4]=	NULL;
 
-	char *brightness_txt="  ";
-	char *frameskip_txt="  ";
-	char *contrast_txt=" . ";
+	char brightness_txt[3]="  ";
+	char frameskip_txt[3]="  ";
+	char contrast_txt[4]=" . ";
 
 	uint8 menu_bg=14;
 	uint8 menu_fg=6;
@@ -1527,9 +1527,9 @@ void draw_keyboard(C64 *TheC64) {
 }
 
 void draw_status() {
-	static char *time="00:00";
-	static char *speed="000%";
-	static char *fps="00";
+	static char time[6]="00:00";
+	static char speed[5]="000%";
+	static char fps[3]="00";
 	uint8 bg, fg;
 
 	bg=14;
