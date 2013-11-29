@@ -156,6 +156,7 @@ void C64::Resume(void)
  *  Vertical blank: Poll keyboard and joysticks, update window
  */
 
+
 void C64::VBlank(bool draw_frame)
 {
 #if 1
@@ -188,8 +189,8 @@ void C64::VBlank(bool draw_frame)
 
 	// Update window if needed
 	if (draw_frame) {
-	printf("drawing frame\n");
-    	TheDisplay->Update();
+		//printf("drawing frame\n");
+		TheDisplay->Update();
 
 		// Calculate time between VBlanks, display speedometer
 		end_time = libgame_utime();
