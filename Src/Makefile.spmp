@@ -31,6 +31,6 @@ include $(LIBGAME)/libgame.mk
 LD=$(CXX)
 
 install:
-	spmount
+	spmount || true
 	cp $(TARGET).bin /spmp/GAME/
 	spoff
