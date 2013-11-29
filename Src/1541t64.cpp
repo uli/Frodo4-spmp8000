@@ -45,6 +45,16 @@
 #include "debug.h"
 
 
+#ifdef SPMP
+/* tmpfile() uses tmpnam(), which creates a file prefixed with "/tmp";
+   that path doesn't exist on the SPMP... */
+#define tmpfile my_tmpfile
+static FILE *my_tmpfile(void)
+{
+	return fopen("_frodo.tmp", "wb+");
+}
+#endif
+
 // Prototypes
 static bool is_t64_header(const uint8 *header);
 static bool is_lynx_header(const uint8 *header);
