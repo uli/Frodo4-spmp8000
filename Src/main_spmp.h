@@ -49,8 +49,9 @@ int main(int argc, char **argv)
 #ifndef USBDEBUG
 	stdout = fopen("frodo/stdout.txt", "w");
 	setbuf(stdout, NULL);
+	/* Nobody uses stderr for anything...
 	stderr = fopen("frodo/stderr.txt", "w");
-	setbuf(stderr, NULL);
+	setbuf(stderr, NULL); */
 #endif
 
 	Frodo *the_app;
@@ -66,8 +67,9 @@ int main(int argc, char **argv)
 
 #ifndef USBDEBUG
 	fclose(stdout);
-	fclose(stderr);
+	/* fclose(stderr); */
 #endif
+
 	return 0;
 }
 
