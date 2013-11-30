@@ -1,22 +1,11 @@
 
 #include <libgame.h>
 
-#if 0
-extern "C" {
-#include "input.h"
-#include "pogo.h"
-#include "ui.h"
-#include "gpmisc.h"
-#include "menu.h"
-#include "c64/c64loader.h"
-}
-#else
 #include "sysdeps.h"
 #include <stdio.h>
 #include "Display.h"
 #include "spmp_menu.h"
 #include "spmp_menu_input.h"
-#endif
 
 #include "C64.h"
 #include "Prefs.h"
