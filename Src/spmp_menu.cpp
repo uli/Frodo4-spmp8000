@@ -779,7 +779,9 @@ void draw_options(C64 *TheC64) {
 	static int is_moving=0;
 	static int threshold=10;
 	static int stepping=2;
+#ifndef SPMP
 	static int gpcpu_speed=133;
+#endif
 	static int load_snapshot=0;
 	static int save_snapshot=0;
 
@@ -789,13 +791,20 @@ void draw_options(C64 *TheC64) {
 		SOUND, BRIGHTNESS, CONTRAST, FRAMESKIP, LIMITSPEED,
 		JOYSTICK, EMU1541CPU, 
 		BLANK2,
-		BUTTONS, CHATBOARD,
+		BUTTONS,
+#ifndef SPMP
+		CHATBOARD,
+#endif
 		BLANK3,
 		LOAD_SNAP, SAVE_SNAP, 
 		BLANK4,
+#ifndef SPMP
 		DEBUG, RESETGP,
+#endif
 		NUM_OPTIONS,
-		CPU_SPEED
+#ifndef SPMP
+		CPU_SPEED,	/* WTF does this come after NUM_OPTIONS?? */
+#endif
 	};
 
 	const char *option_txt[NUM_OPTIONS+5];
@@ -812,12 +821,16 @@ void draw_options(C64 *TheC64) {
 	option_txt[PRG]=		"Load .prg file...           ";
 	option_txt[SAVE_SNAP]=		"Save snapshot...            ";
 	option_txt[LOAD_SNAP]=		"Load snapshot...            ";
+#ifndef SPMP
 	option_txt[CPU_SPEED]=		"gp32 CPU speed              ";
 	option_txt[CHATBOARD]=		"Chatboard                   ";
+#endif
 	option_txt[BUTTONS]=		"Set buttons...              ";
 	option_txt[RESET64]=		"Reset C=64                  ";
+#ifndef SPMP
 	option_txt[DEBUG]=		"Debug console               ";
 	option_txt[RESETGP]=		"Restart GP32                ";
+#endif
 	option_txt[BLANK1]=		"                            ";
 	option_txt[BLANK2]=		"                            ";
 	option_txt[BLANK3]=		"                            ";
@@ -1022,26 +1035,7 @@ void draw_options(C64 *TheC64) {
 	text_out8((uint8 *)gp.pixels, "fast",
 			bg, fg, menu_x+24, menu_y+RESET64, 0);
 
-	// cpu speed
-	/*if(gpcpu_speed==100) {
-		bg=menu_selbg;
-		fg=menu_selfg;
-	} else {
-		bg=menu_bg;
-		fg=menu_fg; }
-	text_out8((uint8 *)gp.pixels, "100",
-			bg, fg, menu_x+20, menu_y+CPU_SPEED, 0);
-	if(gpcpu_speed==133) {
-		bg=menu_selbg;
-		fg=menu_selfg;
-	} else {
-		bg=menu_bg;
-		fg=menu_fg; }
-	text_out8((uint8 *)gp.pixels, "133",
-			bg, fg, menu_x+23, menu_y+CPU_SPEED, 0);
-			*/
-
-#if 0
+#ifndef SPMP
 	// chatboard
 	if(!chatboard_enabled) {
 		bg=menu_selbg;
@@ -1102,13 +1096,13 @@ void draw_options(C64 *TheC64) {
 			load_snapshot=1;
 		} else if(cursor_pos==menu_y+BUTTONS) {
 			set_buttons=1;
-#if 0
+#ifndef SPMP
 		} else if(cursor_pos==menu_y+DEBUG) {
 			switch_console();
 #endif
 		/*} else if(cursor_pos==10) {
 			app_execute(prefs->DrivePath[0]);*/
-#if 0
+#ifndef SPMP
 		} else if(cursor_pos==menu_y+RESETGP) {
 			gp32reboot();
 #endif
@@ -1130,6 +1124,7 @@ void draw_options(C64 *TheC64) {
 	}
 
 	if(button_state&LEFT_PRESSED) {
+#ifndef SPMP
 		if(cursor_pos==menu_y+CPU_SPEED) {
 			if(gpcpu_speed==133) {
 				gpcpu_speed=100;
@@ -1138,6 +1133,7 @@ void draw_options(C64 *TheC64) {
 
 			}
 		}
+#endif
 		if(cursor_pos==menu_y+SOUND) {
 			prefs->SIDType=SIDTYPE_NONE; 
 			update_prefs=1;
@@ -1175,12 +1171,13 @@ void draw_options(C64 *TheC64) {
 			prefs->FastReset=false;
 			update_prefs=1;
 		}
-#if 0
+#ifndef SPMP
 		if(cursor_pos==menu_y+CHATBOARD) {
 			disable_chatboard();
 		}
 #endif
 	} else if(button_state&RIGHT_PRESSED) {
+#ifndef SPMP
 		if(cursor_pos==menu_y+CPU_SPEED) {
 			if(gpcpu_speed==100) {
 				gpcpu_speed=133;
@@ -1188,6 +1185,7 @@ void draw_options(C64 *TheC64) {
 				//cpu_speed(133500000, (81<<12) | (2<<4) | 1, 2);
 			}
 		}
+#endif
 		if(cursor_pos==menu_y+SOUND) {
 			prefs->SIDType=SIDTYPE_DIGITAL; 
 			update_prefs=1;
