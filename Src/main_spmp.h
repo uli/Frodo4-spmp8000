@@ -16,6 +16,20 @@ extern int init_graphics(void);
 /*
  *  Create application object and start it
  */
+extern "C" void __call_exitprocs(int, void *);
+extern emu_keymap_t keymap;
+int my_exit(void)
+{
+	emuIfGraphCleanup();
+	emuIfKeyCleanup(&keymap);
+	emuIfSoundCleanup();
+	fcloseall();
+	libgame_chdir_game();
+	unlink("frodo/_frodo.tmp");
+	ThePrefs.Save("frodo/frodorc");
+	__call_exitprocs(0, NULL);
+	return NativeGE_gameExit();
+}
 
 int main(int argc, char **argv)
 {
@@ -30,6 +44,7 @@ int main(int argc, char **argv)
 	libgame_set_debug(0);
 	//usbdbg_wait_for_plug();
 
+	g_stEmuAPIs->exit = my_exit;
 	stdout = fopen("frodo_stdout.txt", "w");
 #ifndef USBDEBUG
 	setbuf(stdout, NULL);
