@@ -45,6 +45,13 @@
 #define ldSINTAB 9			// size of sinus table (0 to 90 degrees)
 #endif
 
+#ifdef SPMP
+#define USE_FIXPOINT_MATHS
+#define FIXPOINT_PREC 16
+#define PRECOMPUTE_RESONANCE
+#define ldSINTAB 9
+#endif
+
 #ifdef SUN
 extern "C" {
 	#include <sys/audioio.h>
@@ -278,6 +285,8 @@ void MOS6581::SetState(MOS6581State *ss)
 
 #if defined(AMIGA) || defined(__riscos__)
 const uint32 SAMPLE_FREQ = 22050;	// Sample output frequency in Hz
+#elif defined(SPMP)
+const uint32 SAMPLE_FREQ = 48000;
 #else
 const uint32 SAMPLE_FREQ = 44100;	// Sample output frequency in Hz
 #endif
@@ -1368,6 +1377,9 @@ void DigitalRenderer::calc_buffer(int16 *buf, long count)
 
 #elif defined(__riscos__)
 #include "SID_Acorn.h"
+
+#elif defined(SPMP)
+#include "SID_spmp.h"
 
 #else	// No sound
 void DigitalRenderer::init_sound(void) {ready = false;}
