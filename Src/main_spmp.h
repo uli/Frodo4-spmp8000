@@ -99,7 +99,6 @@ void Frodo::ReadyToRun(void)
 
 	/* workaround for non-working global ctors */
 	Prefs p;
-	p.SkipFrames = 2;
 	ThePrefs = p;
 
 	ThePrefs.Load("frodo/frodorc");
