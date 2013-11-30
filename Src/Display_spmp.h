@@ -70,17 +70,6 @@ static int keystate[256];
 
 int init_graphics(void)
 {
-#if 0
-	// Init SDL
-	if (SDL_Init(SDL_INIT_VIDEO) < 0) {
-		fprintf(stderr, "Couldn't initialize SDL (%s)\n", SDL_GetError());
-		return 0;
-	}
-
-	// Open window
-	SDL_WM_SetCaption(VERSION_STRING, "Frodo");
-	screen = SDL_SetVideoMode(DISPLAY_X, DISPLAY_Y + 17, 8, SDL_DOUBLEBUF);
-#else
 	gp.pixels = (uint16_t *)malloc(DISPLAY_X * DISPLAY_Y);
 	gp.width = DISPLAY_X;
 	gp.height = DISPLAY_Y;
@@ -91,9 +80,9 @@ int init_graphics(void)
 	gp.src_clip_w = DISPLAY_X;
 	gp.src_clip_h = DISPLAY_Y;
 	emuIfGraphInit(&gp);
-    /* Disable v-sync, we don't have that much time to waste. */
+	/* Disable v-sync, we don't have that much time to waste. */
         original_shadow = gDisplayDev->getShadowBuffer();
-            gDisplayDev->setShadowBuffer(gDisplayDev->getFrameBuffer());
+        gDisplayDev->setShadowBuffer(gDisplayDev->getFrameBuffer());
 
         keymap.controller = 0;
         emuIfKeyInit(&keymap);
@@ -101,7 +90,6 @@ int init_graphics(void)
 		map_buttons();
 	}            
 	for(int i=0; i<256; i++) keystate[i]=0;
-#endif
 
 	return 1;
 }
@@ -118,23 +106,6 @@ C64Display::C64Display(C64 *the_c64) : TheC64(the_c64)
 #endif
 	speedometer_string[0] = 0;
 
-#if 0
-	// LEDs off
-	for (int i=0; i<4; i++)
-		led_state[i] = old_led_state[i] = LED_OFF;
-
-	// Start timer for LED error blinking
-	c64_disp = this;
-	pulse_sa.sa_handler = (void (*)(int))pulse_handler;
-	pulse_sa.sa_flags = 0;
-	sigemptyset(&pulse_sa.sa_mask);
-	sigaction(SIGALRM, &pulse_sa, NULL);
-	pulse_tv.it_interval.tv_sec = 0;
-	pulse_tv.it_interval.tv_usec = 400000;
-	pulse_tv.it_value.tv_sec = 0;
-	pulse_tv.it_value.tv_usec = 400000;
-	setitimer(ITIMER_REAL, &pulse_tv, NULL);
-#endif
 }
 
 
@@ -501,7 +472,6 @@ extern void poll_input(void);
 
 void C64Display::PollKeyboard(uint8 *key_matrix, uint8 *rev_matrix, uint8 *joystick)
 {
-#if 1
 	//printf("poll keyboard sf %d\n", ThePrefs.SkipFrames);
 	ge_key_data_t bogus_keys;
 	NativeGE_getKeyInput4Ntv(&bogus_keys);
@@ -510,12 +480,12 @@ void C64Display::PollKeyboard(uint8 *key_matrix, uint8 *rev_matrix, uint8 *joyst
 
 	// check button-mapped keys
 	if(bkey_pressed) {
-		printf("bkey %d pressed\n", bkey);
+		//printf("bkey %d pressed\n", bkey);
 		KeyPress(bkey, key_matrix, rev_matrix);
 		bkey_pressed=0;
 	}
 	if(bkey_released) {
-		printf("bkey %d released\n", bkey);
+		//printf("bkey %d released\n", bkey);
 		KeyRelease(bkey, key_matrix, rev_matrix);
 		bkey_released=0;
 	}
@@ -523,91 +493,21 @@ void C64Display::PollKeyboard(uint8 *key_matrix, uint8 *rev_matrix, uint8 *joyst
 	// check virtual keyboard
 	if(keyboard_enabled) {
 		if(vkey_pressed) {
-		printf("vkey %d pressed\n", vkey);
+			//printf("vkey %d pressed\n", vkey);
 			KeyPress(vkey, key_matrix, rev_matrix);
 			vkey_pressed=0;
 		}
 		if(vkey_released) {
-		printf("vkey %d released\n", vkey);
+			//printf("vkey %d released\n", vkey);
 			KeyRelease(vkey, key_matrix, rev_matrix);
 			vkey_released=0;
 			//vkey=0;
 		}
 	}
-#if 0
-	if (keys & keymap.scancode[EMU_KEY_SELECT])
-		TheC64->Reset();
-	else if (keys & keymap.scancode[EMU_KEY_START])
-		SAM(TheC64);
-#endif
 
 	//memset(key_matrix, 0xff, 8);
 	//memset(rev_matrix, 0xff, 8);
 	//*joystick = 0xff;
-
-#else
-	SDL_Event event;
-	while (SDL_PollEvent(&event)) {
-		switch (event.type) {
-
-			// Key pressed
-			case SDL_KEYDOWN:
-				switch (event.key.keysym.sym) {
-
-					case SDLK_F9:	// F9: Invoke SAM
-						SAM(TheC64);
-						break;
-
-					case SDLK_F10:	// F10: Quit
-						quit_requested = true;
-						break;
-
-					case SDLK_F11:	// F11: NMI (Restore)
-						TheC64->NMI();
-						break;
-
-					case SDLK_F12:	// F12: Reset
-						TheC64->Reset();
-						break;
-
-					case SDLK_NUMLOCK:
-						num_locked = true;
-						break;
-
-					case SDLK_KP_PLUS:	// '+' on keypad: Increase SkipFrames
-						ThePrefs.SkipFrames++;
-						break;
-
-					case SDLK_KP_MINUS:	// '-' on keypad: Decrease SkipFrames
-						if (ThePrefs.SkipFrames > 1)
-							ThePrefs.SkipFrames--;
-						break;
-
-					case SDLK_KP_MULTIPLY:	// '*' on keypad: Toggle speed limiter
-						ThePrefs.LimitSpeed = !ThePrefs.LimitSpeed;
-						break;
-
-					default:
-						translate_key(event.key.keysym.sym, false, key_matrix, rev_matrix, joystick);
-						break;
-				}
-				break;
-
-			// Key released
-			case SDL_KEYUP:
-				if (event.key.keysym.sym == SDLK_NUMLOCK)
-					num_locked = false;
-				else
-					translate_key(event.key.keysym.sym, true, key_matrix, rev_matrix, joystick);
-				break;
-
-			// Quit Frodo
-			case SDL_QUIT:
-				quit_requested = true;
-				break;
-		}
-	}
-#endif
 }
 
 
@@ -628,30 +528,13 @@ bool C64Display::NumLock(void)
 
 void C64Display::InitColors(uint8 *colors)
 {
-#if 0
-	SDL_Color palette[PALETTE_SIZE];
-	for (int i=0; i<16; i++) {
-		palette[i].r = palette_red[i];
-		palette[i].g = palette_green[i];
-		palette[i].b = palette_blue[i];
-	}
-	palette[fill_gray].r = palette[fill_gray].g = palette[fill_gray].b = 0xd0;
-	palette[shine_gray].r = palette[shine_gray].g = palette[shine_gray].b = 0xf0;
-	palette[shadow_gray].r = palette[shadow_gray].g = palette[shadow_gray].b = 0x80;
-	palette[red].r = 0xf0;
-	palette[red].g = palette[red].b = 0;
-	palette[green].g = 0xf0;
-	palette[green].r = palette[green].b = 0;
-	SDL_SetColors(screen, palette, 0, PALETTE_SIZE);
-
-#else
 	for (int i=0; i<16; i++) {
 		_palette[i] = MAKE_RGB565(palette_red[i], palette_green[i], palette_blue[i]);
 	}
 	_palette[fill_gray] = MAKE_RGB565(0xd0, 0xd0, 0xd0);
 	_palette[shine_gray] = MAKE_RGB565(0xf0, 0xf0, 0xf0);
 	_palette[shadow_gray] = MAKE_RGB565(0x80, 0x80, 0x80);
-#endif
+
 	for (int i=0; i<256; i++)
 		colors[i] = i & 0x0f;
 }

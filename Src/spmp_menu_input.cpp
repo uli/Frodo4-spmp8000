@@ -107,43 +107,6 @@ struct keymapping keybindings[] = {
 
 extern void reboot_gp32(void);
 
-#if 0
-void enable_chatboard() {
-	int n;
-
-	chatboard_enabled=1;
-	printf("running preInitKbd()\n");
-	if((n=preInitKbd(9600,40000000))==1) {
-		printf("running postInitKbd()\n");
-		n=postInitKbd();
-		if(n<0) {
-			printf("postInitKbd() failed\n");
-		} else {
-			printf("postInitKbd() succeeded\n");
-		}
-	} else if(n<0) {
-		printf("preInitKbd() failed\n");
-	} else {
-		printf("preInitKbd() succeeded\n");
-	}
-
-}
-
-void disable_chatboard() {
-	chatboard_enabled=0;
-	removeKbd();
-}
-
-void read_chatboard() {
-	static unsigned char chatbuf[1];
-
-	getKbdRawNB(chatbuf, 1);
-	if(chatbuf[0]!='\0') {
-		kbd_buf_feed("!");
-	}
-}
-#endif
-
 void process_input(int pressed, char function, char value) {
 	if(function==JOY) {
 		switch(value) {

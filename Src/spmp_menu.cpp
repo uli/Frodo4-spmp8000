@@ -863,7 +863,7 @@ void draw_options(C64 *TheC64) {
 			getfilename=0;
 		} else {
 			if(xfiletype==0) {
-				printf("setting DrivePath[0] to -%s-\n", imagefile);
+				//printf("setting DrivePath[0] to -%s-\n", imagefile);
 				strcpy(prefs->DrivePath[0], imagefile);
 				update_prefs=1;
 				cursor_pos=menu_y+LOADSTAR;
@@ -1233,7 +1233,7 @@ void draw_options(C64 *TheC64) {
 	}
 
 	if(update_prefs) {
-		printf("updating prefs\n");
+		//printf("updating prefs\n");
 		TheC64->NewPrefs(prefs);
 		ThePrefs=*prefs;
 		delete prefs;
