@@ -202,7 +202,7 @@ char *filerequest(char *dir) {
 	uint8 menu_selfg=6;
 
 	if(dir!=NULL) cwd=dir;
-	if(cwd==NULL) cwd=".";
+	if(cwd==NULL) cwd="frodo";
 
 	if(num_items==0) {
 		dirstream=opendir(cwd);
@@ -457,7 +457,7 @@ int draw_snapshotui(C64 *TheC64, int save, char *cur_image) {
 	static int stepping=2;
 	static char *snapshot_index=NULL;
 	FILE *index_file;
-	const char *index_filename="/smfs/gpmm/c64/frodo/snap.idx";
+	const char *index_filename="frodo/snap.idx";
 
 	if(!snapshot_index) {
 		snapshot_index=(char *)malloc(NUM_SLOTS*MENU_WIDTH);
@@ -502,7 +502,7 @@ int draw_snapshotui(C64 *TheC64, int save, char *cur_image) {
 	if(button_state&O_PRESSED) return -1;
 
 	if(button_state&X_PRESSED) {
-		sprintf(filename, "/smfs/gpmm/c64/frodo/snap%d", cursor_pos);
+		sprintf(filename, "frodo/snap%d", cursor_pos);
 		if(save) {
 			remove(filename);
 			TheC64->SaveSnapshot(filename);

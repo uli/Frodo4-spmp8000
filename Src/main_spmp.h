@@ -40,15 +40,16 @@ int main(int argc, char **argv)
 	//usbdbg_blocking = 1;
 
 	libgame_chdir_game();
+	_ecos_mkdir("frodo", 0755);
 
 	libgame_set_debug(0);
 	//usbdbg_wait_for_plug();
 
 	g_stEmuAPIs->exit = my_exit;
-	stdout = fopen("frodo_stdout.txt", "w");
 #ifndef USBDEBUG
+	stdout = fopen("frodo/stdout.txt", "w");
 	setbuf(stdout, NULL);
-	stderr = fopen("frodo_stderr.txt", "w");
+	stderr = fopen("frodo/stderr.txt", "w");
 	setbuf(stderr, NULL);
 #endif
 
@@ -93,14 +94,15 @@ Frodo::~Frodo()
 extern uint8 *font;
 void Frodo::ReadyToRun(void)
 {
-	getcwd(AppDirPath, 256);
+	/* Our SPMP8k OS isn't so great with absolute paths... */
+	strcpy(AppDirPath, "frodo");
 
 	/* workaround for non-working global ctors */
 	Prefs p;
 	p.SkipFrames = 2;
 	ThePrefs = p;
 
-	ThePrefs.Load("frodorc");
+	ThePrefs.Load("frodo/frodorc");
 
 	// Create and start C64
 	TheC64 = new C64;
