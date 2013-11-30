@@ -477,6 +477,7 @@ void C64Display::PollKeyboard(uint8 *key_matrix, uint8 *rev_matrix, uint8 *joyst
 	NativeGE_getKeyInput4Ntv(&bogus_keys);
 	//keys = emuIfKeyGetInput(&keymap);
 	poll_input();
+	kbd_buf_update(TheC64);
 
 	// check button-mapped keys
 	if(bkey_pressed) {
