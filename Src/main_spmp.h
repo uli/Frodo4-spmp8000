@@ -4,7 +4,7 @@
  *  Frodo (C) 1994-1997,2002 Christian Bauer
  */
 
-#define USBDEBUG
+//#define USBDEBUG
 
 #include "Version.h"
 #include <libgame.h>
