@@ -313,7 +313,7 @@ void kbd_buf_update(C64 *TheC64) {
 	}
 }
 
-void load_prg(C64 *TheC64, uint8 *prg, int prg_size) {
+void load_prg(C64 *TheC64, const uint8 *prg, int prg_size) {
 	uint8 start_hi, start_lo;
 	uint16 start;
 	int i;
@@ -326,5 +326,3 @@ void load_prg(C64 *TheC64, uint8 *prg, int prg_size) {
 		TheC64->RAM[start+i]=prg[i];
 	}
 }
-
-

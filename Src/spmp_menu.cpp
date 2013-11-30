@@ -7,6 +7,8 @@
 #include "spmp_menu.h"
 #include "spmp_menu_input.h"
 
+#include "c64loader.h"
+
 #include "C64.h"
 #include "Prefs.h"
 //#include "SAM.h"
@@ -1058,13 +1060,11 @@ void draw_options(C64 *TheC64) {
 			kbd_buf_feed("\rLOAD\":*\",8,1:\rRUN\r");
 			options_enabled=0;
 		}
-#if 0
 		if(cursor_pos==menu_y+LOADER) {
 			load_prg(TheC64, c64loader, sizeof(c64loader));
 			kbd_buf_feed("\rLOAD\"X\",8,1\rRUN\r");
 			options_enabled=0;
 		}
-#endif
 		if(cursor_pos==menu_y+D64) {
 			getfilename=1;
 			xfiletype=0;

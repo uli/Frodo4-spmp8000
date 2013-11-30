@@ -64,7 +64,7 @@ extern int rshoulder_value;
 extern void poll_input(void);
 extern void kbd_buf_feed(const char *s);
 extern void kbd_buf_update(C64 *TheC64);
-extern void load_prg(C64 *TheC64, uint8 *prg, int prg_size);
+extern void load_prg(C64 *TheC64, const uint8 *prg, int prg_size);
 
 #endif
 
