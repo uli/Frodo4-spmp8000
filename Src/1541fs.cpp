@@ -211,7 +211,11 @@ uint8 FSDrive::open_file(int channel, const uint8 *name, int name_len)
 			read_char[channel] = fgetc(file[channel]);
 	} else
 		set_error(ERR_FILENOTFOUND);
+#ifdef SPMP
+	libgame_chdir_game();
+#else
 	chdir(AppDirPath);
+#endif
 #else
 	{
 	  char fullname[NAMEBUF_LENGTH];
@@ -366,7 +370,11 @@ uint8 FSDrive::open_directory(int channel, const uint8 *pattern, int pattern_len
 			// Get file statistics
 			chdir(dir_path);
 			stat(de->d_name, &statbuf);
+#ifdef SPMP
+			libgame_chdir_game();
+#else
 			chdir(AppDirPath);
+#endif
 
 			// Clear line with spaces and terminate with null byte
 			memset(buf, ' ', 31);
