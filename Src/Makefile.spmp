@@ -9,7 +9,7 @@ TARGET = frodo
 VERSION   = 4
 REVISION  = 1
 
-CFLAGS    = -O3 -fomit-frame-pointer -funroll-loops -I./ -DSPMP -W -Wall -Wno-write-strings
+CFLAGS    = -O3 -fomit-frame-pointer -funroll-loops -I./ -DSPMP -W -Wall
 LIBRARIES =
 
 .SUFFIXES: .o .cpp .c .h

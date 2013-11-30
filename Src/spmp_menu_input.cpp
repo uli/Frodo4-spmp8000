@@ -298,7 +298,7 @@ void poll_input(void) {
 char kbd_feedbuf[255];
 int kbd_feedbuf_pos;
 
-void kbd_buf_feed(char *s) {
+void kbd_buf_feed(const char *s) {
 	strcpy(kbd_feedbuf, s);
 	kbd_feedbuf_pos=0;
 }

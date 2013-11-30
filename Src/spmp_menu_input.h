@@ -26,7 +26,7 @@ enum { LEFT, RIGHT, UP, DOWN, FIRE, NUM_JOYVALS }; // joystick values
 enum { MENU, VKEYB, STATS, NUM_UIVALS }; // ui values
 
 struct keymapping {
-	char *name;
+	const char *name;
 	int key;
 };
 
@@ -62,7 +62,7 @@ extern int rshoulder_function;
 extern int rshoulder_value;
 
 extern void poll_input(void);
-extern void kbd_buf_feed(char *s);
+extern void kbd_buf_feed(const char *s);
 extern void kbd_buf_update(C64 *TheC64);
 extern void load_prg(C64 *TheC64, uint8 *prg, int prg_size);
 

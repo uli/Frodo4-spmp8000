@@ -175,7 +175,7 @@ void sort_dir(struct dir_item *list, int num_items, int sepdir) {
 }
 
 char *filerequest(char *dir) {
-	static char *cwd=NULL;
+	static const char *cwd=NULL;
 	static int num_items=0;
 	struct dir_item dir_items[1024];
 	struct stat item;
@@ -188,7 +188,7 @@ char *filerequest(char *dir) {
 	uint16 bg,fg;
 	int i;
 	int pathlength;
-	char *blank_line="                      ";
+	const char *blank_line="                      ";
 	int menu_x=5;
 	int menu_y=3;
 	int menu_height=25;
@@ -346,7 +346,7 @@ void draw_buttonmap(int x, int y, int function, int value) {
 	uint8 menu_fg=6;
 	uint8 menu_selbg=7;
 	uint8 menu_selfg=6;
-	char *value_str=NULL;
+	const char *value_str=NULL;
 
 	if(function==UI) { 
 		bg=menu_selbg; fg=menu_selfg;
@@ -457,7 +457,7 @@ int draw_snapshotui(C64 *TheC64, int save, char *cur_image) {
 	static int stepping=2;
 	static char *snapshot_index=NULL;
 	FILE *index_file;
-	char *index_filename="/smfs/gpmm/c64/frodo/snap.idx";
+	const char *index_filename="/smfs/gpmm/c64/frodo/snap.idx";
 
 	if(!snapshot_index) {
 		snapshot_index=(char *)malloc(NUM_SLOTS*MENU_WIDTH);
@@ -557,7 +557,7 @@ int draw_buttonsui() {
 		NUM_OPTIONS
 	};
 
-	char *option_txt[NUM_OPTIONS+1];
+	const char *option_txt[NUM_OPTIONS+1];
 	option_txt[EXIT]=		"exit...                     ";
 	option_txt[BLANK1]=		"                            ";
 	option_txt[JOYPAD_LEFT]=	"Joypad left                 ";
@@ -798,7 +798,7 @@ void draw_options(C64 *TheC64) {
 		CPU_SPEED
 	};
 
-	char *option_txt[NUM_OPTIONS+5];
+	const char *option_txt[NUM_OPTIONS+5];
 	option_txt[SOUND]=		"Sound                       ";
 	option_txt[BRIGHTNESS]= 	"Brightness                  ";
 	option_txt[CONTRAST]= 		"Contrast                    ";
