@@ -235,7 +235,7 @@ char *filerequest(char *dir) {
 	}
 
 	// display current directory
-	text_out8((uint8 *)gp.pixels, cwd+6, menu_bg, menu_fg, 5, menu_y-1, 0);
+	text_out8((uint8 *)gp.pixels, cwd, menu_bg, menu_fg, 5, menu_y-1, 0);
 
 	// display directory contents
 	row=0;
@@ -1051,7 +1051,7 @@ void draw_options(C64 *TheC64) {
 	bg=menu_bg;
 	fg=menu_fg;
 	text_out8((uint8 *)gp.pixels, "drive 8 img: ", bg, fg, menu_x, i++, 0);
-	text_out8((uint8 *)gp.pixels, prefs->DrivePath[0]+5, bg, fg, menu_x, i++, 0);
+	text_out8((uint8 *)gp.pixels, prefs->DrivePath[0], bg, fg, menu_x, i++, 0);
 	text_out8((uint8 *)gp.pixels, "Press select to load", bg, fg, menu_x, i++, 0);
 
 	if(button_state&X_PRESSED) {
