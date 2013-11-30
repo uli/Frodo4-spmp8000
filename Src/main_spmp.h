@@ -119,5 +119,7 @@ void Frodo::ReadyToRun(void)
 
 bool IsDirectory(const char *path)
 {
-	return false;
+	struct stat st;
+	stat(path, &st);
+	return S_ISDIR(st.st_mode);
 }
