@@ -207,7 +207,7 @@ char *filerequest(char *dir) {
 	if(num_items==0) {
 		dirstream=opendir(cwd);
 		if(dirstream==NULL) {
-			button_state&=~A_PRESSED;
+			button_state&=~X_PRESSED;
 			printf("error opening directory %s\n", cwd);
 			return (char *)-1;
 		}
@@ -298,8 +298,8 @@ char *filerequest(char *dir) {
 		is_moving=0;
 	}
 	
-	if(button_state&A_PRESSED) {
-		button_state&=~A_PRESSED;
+	if(button_state&X_PRESSED) {
+		button_state&=~X_PRESSED;
 		path=(char *)malloc(strlen(cwd)
 				+strlen(dir_items[fcursor_pos].name)
 				+2);
@@ -334,7 +334,7 @@ char *filerequest(char *dir) {
 			printf("selected file -%s-\n", path);
 			return path;
 		}
-	} else if(button_state&B_PRESSED) {
+	} else if(button_state&O_PRESSED) {
 		return (char *)-1;
 	}
 	return NULL;
@@ -499,9 +499,9 @@ int draw_snapshotui(C64 *TheC64, int save, char *cur_image) {
 		is_moving=0;
 	}
 
-	if(button_state&B_PRESSED) return -1;
+	if(button_state&O_PRESSED) return -1;
 
-	if(button_state&A_PRESSED) {
+	if(button_state&X_PRESSED) {
 		sprintf(filename, "/smfs/gpmm/c64/frodo/snap%d", cursor_pos);
 		if(save) {
 			remove(filename);
@@ -544,8 +544,8 @@ int draw_buttonsui() {
 
 	enum {
 		EXIT, BLANK1,
-		BUTTON_A, BUTTON_AV, 
-		BUTTON_B, BUTTON_BV,
+		BUTTON_X, BUTTON_XV, 
+		BUTTON_O, BUTTON_OV,
 		JOYPAD_LEFT, JOYPAD_LEFTV, 
 		JOYPAD_RIGHT, JOYPAD_RIGHTV, 
 		JOYPAD_UP, JOYPAD_UPV, 
@@ -568,10 +568,10 @@ int draw_buttonsui() {
 	option_txt[JOYPAD_UPV]=		"                            ";
 	option_txt[JOYPAD_DOWN]=	"Joypad down                 ";
 	option_txt[JOYPAD_DOWNV]=	"                            ";
-	option_txt[BUTTON_A]=		"Button A                    ";
-	option_txt[BUTTON_AV]=		"                            ";
-	option_txt[BUTTON_B]=		"Button B                    ";
-	option_txt[BUTTON_BV]=		"                            ";
+	option_txt[BUTTON_X]=		"Button X                    ";
+	option_txt[BUTTON_XV]=		"                            ";
+	option_txt[BUTTON_O]=		"Button O                    ";
+	option_txt[BUTTON_OV]=		"                            ";
 	option_txt[SHOULDER_LEFT]=	"Left shoulder               ";
 	option_txt[SHOULDER_LEFTV]=	"                            ";
 	option_txt[SHOULDER_RIGHT]=	"Right shoulder              ";
@@ -595,8 +595,8 @@ int draw_buttonsui() {
 	draw_buttonmap(18, menu_y+JOYPAD_RIGHT, right_function, right_value);
 	draw_buttonmap(18, menu_y+JOYPAD_UP, up_function, up_value);
 	draw_buttonmap(18, menu_y+JOYPAD_DOWN, down_function, down_value);
-	draw_buttonmap(18, menu_y+BUTTON_A, a_function, a_value);
-	draw_buttonmap(18, menu_y+BUTTON_B, b_function, b_value);
+	draw_buttonmap(18, menu_y+BUTTON_X, x_function, x_value);
+	draw_buttonmap(18, menu_y+BUTTON_O, o_function, o_value);
 	draw_buttonmap(18, menu_y+SHOULDER_LEFT, lshoulder_function, lshoulder_value);
 	draw_buttonmap(18, menu_y+SHOULDER_RIGHT, rshoulder_function, rshoulder_value);
 	draw_buttonmap(18, menu_y+START_BUTTON, start_function, start_value);
@@ -653,17 +653,17 @@ int draw_buttonsui() {
 			case JOYPAD_DOWNV+3:
 				button_dec_value(&down_function, &down_value);
 				break;
-			case BUTTON_A+3:
-				button_dec_function(&a_function, &a_value);
+			case BUTTON_X+3:
+				button_dec_function(&x_function, &x_value);
 				break;
-			case BUTTON_AV+3:
-				button_dec_value(&a_function, &a_value);
+			case BUTTON_XV+3:
+				button_dec_value(&x_function, &x_value);
 				break;
-			case BUTTON_B+3:
-				button_dec_function(&b_function, &b_value);
+			case BUTTON_O+3:
+				button_dec_function(&o_function, &o_value);
 				break;
-			case BUTTON_BV+3:
-				button_dec_value(&b_function, &b_value);
+			case BUTTON_OV+3:
+				button_dec_value(&o_function, &o_value);
 				break;
 			case SHOULDER_LEFT+3:
 				button_dec_function(&lshoulder_function, &lshoulder_value);
@@ -717,17 +717,17 @@ int draw_buttonsui() {
 			case JOYPAD_DOWNV+3:
 				button_inc_value(&down_function, &down_value);
 				break;
-			case BUTTON_A+3:
-				button_inc_function(&a_function, &a_value);
+			case BUTTON_X+3:
+				button_inc_function(&x_function, &x_value);
 				break;
-			case BUTTON_AV+3:
-				button_inc_value(&a_function, &a_value);
+			case BUTTON_XV+3:
+				button_inc_value(&x_function, &x_value);
 				break;
-			case BUTTON_B+3:
-				button_inc_function(&b_function, &b_value);
+			case BUTTON_O+3:
+				button_inc_function(&o_function, &o_value);
 				break;
-			case BUTTON_BV+3:
-				button_inc_value(&b_function, &b_value);
+			case BUTTON_OV+3:
+				button_inc_value(&o_function, &o_value);
 				break;
 			case SHOULDER_LEFT+3:
 				button_inc_function(&lshoulder_function, &lshoulder_value);
@@ -756,9 +756,9 @@ int draw_buttonsui() {
 		}
 	}
 
-	if(button_state&B_PRESSED) return 1;
+	if(button_state&O_PRESSED) return 1;
 
-	if((button_state&A_PRESSED)&&(cursor_pos==(menu_y+EXIT))) return 1;
+	if((button_state&X_PRESSED)&&(cursor_pos==(menu_y+EXIT))) return 1;
 
 	return 0;
 }
@@ -887,7 +887,7 @@ void draw_options(C64 *TheC64) {
 
 	if(set_buttons) {
 		if(draw_buttonsui()) set_buttons=0;
-		button_state&=~A_PRESSED;
+		button_state&=~X_PRESSED;
 		return;
 	}
 
@@ -1069,8 +1069,8 @@ void draw_options(C64 *TheC64) {
 	text_out8((uint8 *)gp.pixels, prefs->DrivePath[0]+5, bg, fg, menu_x, i++, 0);
 	text_out8((uint8 *)gp.pixels, "Press select to load", bg, fg, menu_x, i++, 0);
 
-	if(button_state&A_PRESSED) {
-		button_state&=~(A_PRESSED);
+	if(button_state&X_PRESSED) {
+		button_state&=~(X_PRESSED);
 		if(cursor_pos==menu_y+LOADSTAR) {
 			kbd_buf_feed("\rLOAD\":*\",8,1:\rRUN\r");
 			options_enabled=0;
@@ -1378,7 +1378,7 @@ void draw_keyboard(C64 *TheC64) {
 	// power led :)
 	text_out8((uint8 *)gp.pixels, "*", 9, 2, keyb_start_x+22, keyb_start_y, 1);
 
-	if(button_state&A_PRESSED) {
+	if(button_state&X_PRESSED) {
 		// drag keyboard
 		if(cursor_x>=keyb_start_x
 				&&cursor_x<=(keyb_start_x+keyb_width)
@@ -1446,7 +1446,7 @@ void draw_keyboard(C64 *TheC64) {
 				&&cursor_x>=keyb_start_x+1
 				&&cursor_x<=keyb_start_x+4) {
 			shifted^=1;
-			button_state&=~(A_PRESSED);
+			button_state&=~(X_PRESSED);
 		}
 		// ctrl key
 		  else if(cursor_y==keyb_start_y+3
@@ -1465,14 +1465,14 @@ void draw_keyboard(C64 *TheC64) {
 				vkey_released=1;
 			}
 
-			button_state&=~(A_PRESSED);
+			button_state&=~(X_PRESSED);
 		}
 		// restore key
 		  else if(cursor_y==keyb_start_y+3
 				&&cursor_x>=keyb_start_x+17
 				&&cursor_x<=keyb_start_x+20) {
 			TheC64->NMI();
-			button_state&=~(A_PRESSED);
+			button_state&=~(X_PRESSED);
 		}
 		// run/stop key
 		  else if(cursor_y==keyb_start_y+4
@@ -1493,7 +1493,7 @@ void draw_keyboard(C64 *TheC64) {
 				vkey_released=1;
 			}
 
-			button_state&=~(A_PRESSED);
+			button_state&=~(X_PRESSED);
 		}
 
 	} else {

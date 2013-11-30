@@ -11,8 +11,8 @@ extern uint32 joy_state;
 #define START_PRESSED 1
 #define SELECT_PRESSED 2
 #define FIRE_PRESSED 4
-#define A_PRESSED 4
-#define B_PRESSED 8
+#define X_PRESSED 4
+#define O_PRESSED 8
 #define LEFT_PRESSED 16
 #define RIGHT_PRESSED 32
 #define UP_PRESSED 64
@@ -44,10 +44,10 @@ extern int start_function;
 extern int start_value;
 extern int select_function;
 extern int select_value;
-extern int a_function;
-extern int a_value;
-extern int b_function;
-extern int b_value;
+extern int x_function;
+extern int x_value;
+extern int o_function;
+extern int o_value;
 extern int left_function;
 extern int left_value;
 extern int right_function;

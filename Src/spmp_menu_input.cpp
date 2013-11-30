@@ -27,10 +27,10 @@ int start_function=UI;
 int start_value=MENU;
 int select_function=KEY;
 int select_value=1;
-int a_function=JOY;
-int a_value=FIRE;
-int b_function=KEY;
-int b_value=0;
+int x_function=JOY;
+int x_value=FIRE;
+int o_function=KEY;
+int o_value=0;
 int left_function=JOY;
 int left_value=LEFT;
 int right_function=JOY;
@@ -272,23 +272,23 @@ void poll_input(void) {
 		/* button B */
 		if((current_pbdat^last_pbdat)&keymap.scancode[EMU_KEY_O]) {
 			if(current_pbdat&keymap.scancode[EMU_KEY_O]) {
-				button_state&=~(uint32)B_PRESSED;
-				process_input(0, b_function, b_value);
+				button_state&=~(uint32)O_PRESSED;
+				process_input(0, o_function, o_value);
 			} else {
-				button_state|=B_PRESSED;
-				process_input(1, b_function, b_value);
+				button_state|=O_PRESSED;
+				process_input(1, o_function, o_value);
 			}
 		}
 		/* button A */
 		if((current_pbdat^last_pbdat)&keymap.scancode[EMU_KEY_X]) {
 			if(current_pbdat&keymap.scancode[EMU_KEY_X]) {
-				printf("X released %0x/%0x\n", current_pbdat, last_pbdat);
-				button_state&=~(uint32)A_PRESSED;
-				process_input(0, a_function, a_value);
+				//printf("X released %0x/%0x\n", current_pbdat, last_pbdat);
+				button_state&=~(uint32)X_PRESSED;
+				process_input(0, x_function, x_value);
 			} else {
-				printf("X pressed %0x/%0x\n", current_pbdat, last_pbdat);
-				button_state|=A_PRESSED;
-				process_input(1, a_function, a_value);
+				//printf("X pressed %0x/%0x\n", current_pbdat, last_pbdat);
+				button_state|=X_PRESSED;
+				process_input(1, x_function, x_value);
 			}
 		}
 		/* right shoulder button */

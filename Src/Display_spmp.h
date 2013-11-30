@@ -53,12 +53,12 @@ uint32_t keys;
 static void map_buttons(void)
 {
     libgame_buttonmap_t bm[] = {
-        {"SAM", EMU_KEY_START},
-        {"Keyboard", EMU_KEY_SELECT},	/* aka SELECT */
-        {"OK", EMU_KEY_O},		/* aka B */
-        {"Cancel", EMU_KEY_X},		/* aka X */
-        {"Edit", EMU_KEY_SQUARE},	/* aka A */
-        {"Delete", EMU_KEY_TRIANGLE},	/* aka Y */
+        {"Start", EMU_KEY_START},
+        {"Select", EMU_KEY_SELECT},	/* aka SELECT */
+        {"O", EMU_KEY_O},		/* aka B */
+        {"X", EMU_KEY_X},		/* aka X */
+        {"Square", EMU_KEY_SQUARE},	/* aka A */
+        {"Triangle", EMU_KEY_TRIANGLE},	/* aka Y */
         {"L", EMU_KEY_L},
         {"R", EMU_KEY_R},
         {0, 0}
