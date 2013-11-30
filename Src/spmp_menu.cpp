@@ -571,6 +571,7 @@ int draw_buttonsui() {
 	option_txt[START_BUTTONV]=	"                            ";
 	option_txt[SELECT_BUTTON]=	"Select                      ";
 	option_txt[SELECT_BUTTONV]=	"                            ";
+	option_txt[NUM_OPTIONS]=	NULL;
 
 	for(i=0; option_txt[i]; i++) {
 		if(cursor_pos==(menu_y+i)) { 
