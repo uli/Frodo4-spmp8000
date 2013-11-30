@@ -67,7 +67,7 @@ int ascii2charrom(char chr) {
 	int x=(int)chr;
 
 	if(x>=97&&x<=122) x+=160;
-	else if(x>=65&&x<=90) x-=64;
+	else if(x>=64&&x<=90) x-=64;
 	return x;
 }
 
@@ -1231,7 +1231,7 @@ void draw_options(C64 *TheC64) {
 }
 
 void draw_keyboard(C64 *TheC64) {
-	const int keyb_width=27;
+	const int keyb_width=30;
 	const int keyb_height=8;
 	static int keyb_start_x=14;
 	static int keyb_start_y=21;
@@ -1244,14 +1244,14 @@ void draw_keyboard(C64 *TheC64) {
 	int i;
 
 	char keyb[keyb_height][keyb_width]={
-		" =---=================*= ",
-		"                         ",
-		"    < 1234567890 del  F1 ",
-		" ctrl QWERTYUIOP rstr F3 ",
-		" r/st ASDFGHJKL; rtrn F5 ",
-		" shft ZXCVBNM,./   .  F7 ",
-		"  c    space      ...    ",
-		"                         "
+		" =---====================*= ",
+		"                    home    ",
+		"    \x1f 1234567890+-\x1c del  F1 ",
+		" ctrl QWERTYUIOP@*\x1e rstr F3 ",
+		" r/st ASDFGHJKL:;=  rtrn F5 ",
+		" shft ZXCVBNM,./      .  F7 ",
+		"  c=   space         ...    ",
+		"                            "
 	};
 
 	int keytable[] = {
@@ -1266,6 +1266,9 @@ void draw_keyboard(C64 *TheC64) {
 		13, 2, MATRIX(3,3), //8
 		14, 2, MATRIX(4,0), //9
 		15, 2, MATRIX(4,3), //0
+		16, 2, MATRIX(5,0), //+
+		17, 2, MATRIX(5,3), //-
+		18, 2, MATRIX(6,0), //pound
 
 		6, 3, MATRIX(7,6), //q
 		7, 3, MATRIX(1,1), //w
@@ -1277,6 +1280,9 @@ void draw_keyboard(C64 *TheC64) {
 		13, 3, MATRIX(4,1), //i
 		14, 3, MATRIX(4,6), //o
 		15, 3, MATRIX(5,1), //p
+		16, 3, MATRIX(5,6), //@
+		17, 3, MATRIX(6,1), //*
+		18, 3, MATRIX(6,6), //up arrow
 
 		6, 4, MATRIX(1,2), //a
 		7, 4, MATRIX(1,5), //s
@@ -1287,7 +1293,9 @@ void draw_keyboard(C64 *TheC64) {
 		12, 4, MATRIX(4,2), //j
 		13, 4, MATRIX(4,5), //k
 		14, 4, MATRIX(5,2), //l
-		15, 4, MATRIX(6,2), //;
+		15, 4, MATRIX(5,5), //:
+		16, 4, MATRIX(6,2), //;
+		17, 4, MATRIX(6,5), //=
 
 		6, 5, MATRIX(1,4), //z
 		7, 5, MATRIX(2,7), //x
@@ -1301,6 +1309,7 @@ void draw_keyboard(C64 *TheC64) {
 		15, 5, MATRIX(6,7), ///
 
 		2, 6, MATRIX(7,5), //c=
+		3, 6, MATRIX(7,5), //c=
 
 		//1, 4, MATRIX(7,7), //run/stop
 		//2, 4, MATRIX(7,7), //
@@ -1315,28 +1324,33 @@ void draw_keyboard(C64 *TheC64) {
 		10,6, MATRIX(7,4), // space
 		11,6, MATRIX(7,4), // space
 
-		17, 4, MATRIX(0,1), //return
-		18, 4, MATRIX(0,1), //return
-		19, 4, MATRIX(0,1), //return
 		20, 4, MATRIX(0,1), //return
+		21, 4, MATRIX(0,1), //return
+		22, 4, MATRIX(0,1), //return
+		23, 4, MATRIX(0,1), //return
 
-		19, 5, (MATRIX(0,7))|128, //crsr up
-		19, 6, MATRIX(0,7), //crsr down
-		18, 6, (MATRIX(0,2))|128, //crsr left
-		20, 6, MATRIX(0,2), //crsr right
+		22, 5, (MATRIX(0,7))|128, //crsr up
+		22, 6, MATRIX(0,7), //crsr down
+		21, 6, (MATRIX(0,2))|128, //crsr left
+		23, 6, MATRIX(0,2), //crsr right
 
-		17, 2, MATRIX(0,0), //delete
-		18, 2, MATRIX(0,0), //delete
-		19, 2, MATRIX(0,0), //delete
+		20, 2, MATRIX(0,0), //delete
+		21, 2, MATRIX(0,0), //delete
+		22, 2, MATRIX(0,0), //delete
 
-		22, 2, MATRIX(0,4), //f1
-		23, 2, MATRIX(0,4), //f1
-		22, 3, MATRIX(0,5), //f3
-		23, 3, MATRIX(0,5), //f3
-		22, 4, MATRIX(0,6), //f5
-		23, 4, MATRIX(0,6), //f5
-		22, 5, MATRIX(0,3), //f7
-		23, 5, MATRIX(0,3), //f7
+		20, 1, MATRIX(6,3), //home
+		21, 1, MATRIX(6,3), //home
+		22, 1, MATRIX(6,3), //home
+		23, 1, MATRIX(6,3), //home
+
+		25, 2, MATRIX(0,4), //f1
+		26, 2, MATRIX(0,4), //f1
+		25, 3, MATRIX(0,5), //f3
+		26, 3, MATRIX(0,5), //f3
+		25, 4, MATRIX(0,6), //f5
+		26, 4, MATRIX(0,6), //f5
+		25, 5, MATRIX(0,3), //f7
+		26, 5, MATRIX(0,3), //f7
 
 		NULL
 	};
@@ -1364,7 +1378,7 @@ void draw_keyboard(C64 *TheC64) {
 		text_out8((uint8 *)gp.pixels, "ctrl", 7, 1, keyb_start_x+1, keyb_start_y+3, 0);
 	}
 	// power led :)
-	text_out8((uint8 *)gp.pixels, "*", 9, 2, keyb_start_x+22, keyb_start_y, 1);
+	text_out8((uint8 *)gp.pixels, "*", 9, 2, keyb_start_x+25, keyb_start_y, 1);
 
 	if(button_state&X_PRESSED) {
 		// drag keyboard
@@ -1500,7 +1514,7 @@ void draw_keyboard(C64 *TheC64) {
 				&& keyb_start_x>0) {
 			keyb_start_x--;
 		} else if((cursor_x>cursor_x_last)
-				&& keyb_start_x<30) {
+				&& keyb_start_x<20) {
 			keyb_start_x++;
 		}
 
@@ -1508,7 +1522,7 @@ void draw_keyboard(C64 *TheC64) {
 				&& keyb_start_y>0) {
 			keyb_start_y--;
 		} else if((cursor_y>cursor_y_last)
-				&& keyb_start_y<24) {
+				&& keyb_start_y<26) {
 			keyb_start_y++;
 		}
 	}
@@ -1568,7 +1582,7 @@ void draw_cursor() {
 		is_moving_x=1;
 	} else if(button_state&RIGHT_PRESSED) {
 		if(is_moving==0||((is_moving>threshold)&&(is_moving%stepping==0))) {
-			if(cursor_x<39) {
+			if(cursor_x<47) {
 				cursor_x++;
 			}
 		}
@@ -1585,7 +1599,7 @@ void draw_cursor() {
 		is_moving_y=1;
 	} else if(button_state&DOWN_PRESSED) {
 		if(is_moving==0||((is_moving>threshold)&&(is_moving%stepping==0))) {
-			if(cursor_y<29) {
+			if(cursor_y<33) {
 				cursor_y++;
 			}
 		}
