@@ -63,7 +63,7 @@ static void map_buttons(void)
         {"R", EMU_KEY_R},
         {0, 0}
     };
-    libgame_map_buttons("frodo.map", &keymap, bm);
+    libgame_map_buttons("frodo/frodo.map", &keymap, bm);
 }
 
 static int keystate[256];
@@ -86,7 +86,7 @@ int init_graphics(void)
 
         keymap.controller = 0;
         emuIfKeyInit(&keymap);
-	if (libgame_load_buttons("frodo.map", &keymap) < 0) {
+	if (libgame_load_buttons("frodo/frodo.map", &keymap) < 0) {
 		map_buttons();
 	}            
 	for(int i=0; i<256; i++) keystate[i]=0;
